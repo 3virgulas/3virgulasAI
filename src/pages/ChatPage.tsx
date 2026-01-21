@@ -32,7 +32,7 @@ export function ChatPage() {
     const { user, signOut } = useAuth();
     const navigate = useNavigate();
     const [currentChatId, setCurrentChatId] = useState<string | undefined>();
-    const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
+    const [_isGeneratingTitle, setIsGeneratingTitle] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 

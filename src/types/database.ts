@@ -54,6 +54,36 @@ export interface Database {
                     created_at?: string;
                 };
             };
+            app_settings: {
+                Row: {
+                    id: string;
+                    selected_model: string;
+                    system_instruction: string;
+                    ai_avatar_url: string | null;
+                    vision_model: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    selected_model?: string;
+                    system_instruction?: string;
+                    ai_avatar_url?: string | null;
+                    vision_model?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    selected_model?: string;
+                    system_instruction?: string;
+                    ai_avatar_url?: string | null;
+                    vision_model?: string;
+                    updated_at?: string;
+                };
+            };
         };
+        Views: Record<string, never>;
+        Functions: Record<string, never>;
+        Enums: Record<string, never>;
     };
 }
+

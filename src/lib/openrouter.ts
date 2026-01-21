@@ -175,7 +175,7 @@ export async function fetchOpenRouterResponse({
 export async function generateChatTitle(
     apiKey: string,
     firstMessage: string,
-    model = DEFAULT_MODEL
+    model: string = DEFAULT_MODEL
 ): Promise<string> {
     const response = await fetchOpenRouterResponse({
         apiKey,
