@@ -129,7 +129,7 @@ export function ChatPage() {
     // handleSendMessage - Vision Proxy Integration
     // =====================================================
     const handleSendMessage = useCallback(
-        async (content: string, imageBase64?: string) => {
+        async (content: string, imageBase64?: string, parsedFile?: import('../lib/fileParser').ParsedFile) => {
             await refreshSettings();
             const { selected_model, system_instruction, vision_model } = getSettings();
 
@@ -137,7 +137,9 @@ export function ChatPage() {
 
             // Criar chat se não existir
             if (!activeChatId) {
-                const initialTitle = generateInitialTitle(content || 'Análise de Imagem');
+                const initialTitle = generateInitialTitle(
+                    content || parsedFile?.fileName || 'Análise de Imagem'
+                );
                 const newChat = await createChat(initialTitle);
                 if (!newChat) {
                     console.error('Falha ao criar novo chat');
@@ -149,7 +151,8 @@ export function ChatPage() {
                 await refreshChats();
             }
 
-            // ===== VISION PROXY FLOW =====
+            // ===== VISION PROXY FLOW (Images) =====
+            // ===== DOCUMENT PROCESSING FLOW (PDF, DOCX, etc) =====
             let finalContent = content;
 
             if (imageBase64) {
@@ -168,15 +171,21 @@ export function ChatPage() {
                 } catch (error) {
                     console.error('Erro na análise de imagem:', error);
                     setIsAnalyzing(false);
-                    // Continuar mesmo sem descrição visual
                     finalContent = content || 'Descreva esta imagem';
                 }
+            } else if (parsedFile) {
+                // Processar documento (PDF, DOCX, TXT, etc)
+                const { formatFileContentForAI } = await import('../lib/fileParser');
+                finalContent = formatFileContentForAI(parsedFile, content);
             }
 
-            // Salvar mensagem do usuário (texto original, não o formatado)
-            const displayContent = imageBase64
-                ? `📷 ${content || '[Imagem anexada]'}`
-                : content;
+            // Salvar mensagem do usuário (com ícone apropriado)
+            let displayContent = content;
+            if (imageBase64) {
+                displayContent = `📷 ${content || '[Imagem anexada]'}`;
+            } else if (parsedFile) {
+                displayContent = `📄 ${parsedFile.fileName}${content ? `\n${content}` : ''}`;
+            }
 
             const userMessage = await addUserMessage(displayContent, activeChatId);
             if (!userMessage) {
@@ -188,14 +197,14 @@ export function ChatPage() {
             startStreaming(activeChatId);
             streamingContentRef.current = '';
 
-            // Preparar histórico para API (usar conteúdo formatado com descrição visual)
+            // Preparar histórico para API
             const persistedMessages = messages.filter((m) => !m.id.startsWith('streaming-'));
             const apiMessages = persistedMessages.map((msg) => ({
                 role: msg.role,
                 content: msg.content,
             }));
 
-            // Adicionar a mensagem atual com descrição visual
+            // Adicionar a mensagem atual (com descrição visual ou conteúdo do documento)
             apiMessages.push({
                 role: 'user' as const,
                 content: finalContent,

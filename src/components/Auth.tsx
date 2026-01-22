@@ -34,9 +34,6 @@ export function Auth() {
             <div className="w-full max-w-md">
                 {/* Logo */}
                 <div className="text-center mb-10">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl border border-matrix-primary/30 bg-matrix-primary/5 mb-4">
-                        <span className="text-2xl font-bold text-matrix-primary font-mono">3,</span>
-                    </div>
                     <h1 className="text-2xl font-medium text-dark-text-primary mb-2">
                         Bem-vindo ao 3Vírgulas
                     </h1>
