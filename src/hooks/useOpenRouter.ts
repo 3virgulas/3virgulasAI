@@ -25,6 +25,25 @@ const VISION_SYSTEM_PROMPT = `Analyze this image and provide a detailed, objecti
 const RETRY_DELAYS = [1000, 3000, 5000]; // 1s, 3s, 5s
 const RETRYABLE_STATUS_CODES = [408, 429, 500, 502, 503, 504];
 
+// =====================================================
+// Sliding Context Window Configuration
+// =====================================================
+// Mantém apenas as últimas N mensagens do histórico (user/assistant)
+// para evitar confusão em conversas longas e economizar tokens
+const CONTEXT_WINDOW_SIZE = 10; // Últimas 10 mensagens (5 pares user/assistant)
+
+// =====================================================
+// Stop Sequences - Anti-Loop Protection
+// =====================================================
+// Frases que forçam a IA a parar, evitando loops de conclusão repetitiva
+const STOP_SEQUENCES = [
+    'Você gostaria de saber mais',
+    'Posso ajudar com algo mais',
+    'Tem mais alguma dúvida',
+    'Gostaria de mais informações',
+    'Precisa de mais detalhes',
+];
+
 // Verifica se o erro é retryable
 const isRetryableError = (status: number): boolean => {
     return RETRYABLE_STATUS_CODES.includes(status) || status >= 500;
@@ -236,17 +255,30 @@ export function useOpenRouter({
 
             abortControllerRef.current = new AbortController();
 
-            const preparedMessages: OpenRouterMessage[] = systemPrompt
-                ? [{ role: 'system', content: systemPrompt }, ...messages]
+            // =====================================================
+            // Sliding Context Window - Janela de Contexto Deslizante
+            // =====================================================
+            // 1. Sempre mantém o System Prompt (identidade da IA)
+            // 2. Pega apenas as últimas N mensagens do histórico
+            // Isso evita confusão em conversas longas e economiza tokens
+            const recentMessages = messages.length > CONTEXT_WINDOW_SIZE
+                ? messages.slice(-CONTEXT_WINDOW_SIZE)
                 : messages;
+
+            const preparedMessages: OpenRouterMessage[] = systemPrompt
+                ? [{ role: 'system', content: systemPrompt }, ...recentMessages]
+                : recentMessages;
 
             const modelConfig: ModelConfig = {
                 model,
-                temperature: 0.7,
-                max_tokens: 4096,
-                top_p: 0.9,
+                temperature: 0.7,           // Equilíbrio entre criatividade e lógica
+                max_tokens: 2048,           // Reduzido de 4096 para evitar delírios
+                top_p: 0.9,                 // Corta respostas estatisticamente improváveis
+                top_k: 40,                  // Limita vocabulário para manter coerência
+                repetition_penalty: 1.1,    // CRÍTICO: Penaliza repetição de palavras/frases
                 frequency_penalty: 0.0,
                 presence_penalty: 0.0,
+                stop: STOP_SEQUENCES,       // CRÍTICO: Para antes de loops de conclusão
             };
 
             const requestBody = {

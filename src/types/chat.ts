@@ -48,8 +48,11 @@ export interface ModelConfig {
     temperature?: number;
     max_tokens?: number;
     top_p?: number;
+    top_k?: number;
+    repetition_penalty?: number;
     frequency_penalty?: number;
     presence_penalty?: number;
+    stop?: string[]; // Stop sequences para prevenir loops
 }
 
 // Lista de modelos uncensored disponíveis

@@ -14,6 +14,25 @@ import {
 
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
+// =====================================================
+// Sliding Context Window Configuration
+// =====================================================
+// Mantém apenas as últimas N mensagens do histórico (user/assistant)
+// para evitar confusão em conversas longas e economizar tokens
+const CONTEXT_WINDOW_SIZE = 10; // Últimas 10 mensagens (5 pares user/assistant)
+
+// =====================================================
+// Stop Sequences - Anti-Loop Protection
+// =====================================================
+// Frases que forçam a IA a parar, evitando loops de conclusão repetitiva
+const STOP_SEQUENCES = [
+    'Você gostaria de saber mais',
+    'Posso ajudar com algo mais',
+    'Tem mais alguma dúvida',
+    'Gostaria de mais informações',
+    'Precisa de mais detalhes',
+];
+
 export interface StreamOptions {
     apiKey: string;
     messages: OpenRouterMessage[];
@@ -39,16 +58,27 @@ export async function streamOpenRouterResponse({
     onError,
     signal,
 }: StreamOptions): Promise<string> {
-    // Preparar mensagens com system prompt
-    const preparedMessages: OpenRouterMessage[] = systemPrompt
-        ? [{ role: 'system', content: systemPrompt }, ...messages]
+    // =====================================================
+    // Sliding Context Window - Janela de Contexto Deslizante
+    // =====================================================
+    // 1. Sempre mantém o System Prompt (identidade da IA)
+    // 2. Pega apenas as últimas N mensagens do histórico
+    const recentMessages = messages.length > CONTEXT_WINDOW_SIZE
+        ? messages.slice(-CONTEXT_WINDOW_SIZE)
         : messages;
+
+    const preparedMessages: OpenRouterMessage[] = systemPrompt
+        ? [{ role: 'system', content: systemPrompt }, ...recentMessages]
+        : recentMessages;
 
     const modelConfig: ModelConfig = {
         model,
-        temperature: 0.7,
-        max_tokens: 4096,
-        top_p: 0.9,
+        temperature: 0.7,           // Equilíbrio entre criatividade e lógica
+        max_tokens: 2048,           // Reduzido de 4096 para evitar delírios
+        top_p: 0.9,                 // Corta respostas estatisticamente improváveis
+        top_k: 40,                  // Limita vocabulário para manter coerência
+        repetition_penalty: 1.1,    // CRÍTICO: Penaliza repetição de palavras/frases
+        stop: STOP_SEQUENCES,       // CRÍTICO: Para antes de loops de conclusão
     };
 
     try {
@@ -139,9 +169,14 @@ export async function fetchOpenRouterResponse({
     model = DEFAULT_MODEL,
     systemPrompt,
 }: Omit<StreamOptions, 'onToken' | 'onComplete' | 'onError' | 'signal'>): Promise<string> {
-    const preparedMessages: OpenRouterMessage[] = systemPrompt
-        ? [{ role: 'system', content: systemPrompt }, ...messages]
+    // Sliding Context Window - Janela de Contexto Deslizante
+    const recentMessages = messages.length > CONTEXT_WINDOW_SIZE
+        ? messages.slice(-CONTEXT_WINDOW_SIZE)
         : messages;
+
+    const preparedMessages: OpenRouterMessage[] = systemPrompt
+        ? [{ role: 'system', content: systemPrompt }, ...recentMessages]
+        : recentMessages;
 
     const response = await fetch(OPENROUTER_API_URL, {
         method: 'POST',
@@ -154,9 +189,13 @@ export async function fetchOpenRouterResponse({
         body: JSON.stringify({
             model,
             messages: preparedMessages,
-            temperature: 0.7,
-            max_tokens: 4096,
-            stream: false, // Sem streaming
+            temperature: 0.7,           // Equilíbrio entre criatividade e lógica
+            max_tokens: 2048,           // Reduzido de 4096 para evitar delírios
+            top_p: 0.9,                 // Corta respostas estatisticamente improváveis
+            top_k: 40,                  // Limita vocabulário para manter coerência
+            repetition_penalty: 1.1,    // CRÍTICO: Penaliza repetição de palavras/frases
+            stop: STOP_SEQUENCES,       // CRÍTICO: Para antes de loops de conclusão
+            stream: false,              // Sem streaming
         }),
     });
 
