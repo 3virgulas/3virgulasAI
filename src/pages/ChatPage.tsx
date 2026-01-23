@@ -19,7 +19,7 @@ import { Sidebar } from '../components/Sidebar';
 import { MobileHeader } from '../components/MobileHeader';
 import { MessageList } from '../components/MessageList';
 import { ChatInput } from '../components/ChatInput';
-import { PremiumPaymentModal } from '../components/PremiumPaymentModal';
+import { PrometheusModal } from '../components/PrometheusModal';
 import { Settings } from 'lucide-react';
 
 const ADMIN_EMAIL = 'contato@3virgulas.com';
@@ -37,7 +37,7 @@ export function ChatPage() {
     const [_isGeneratingTitle, setIsGeneratingTitle] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [showPremiumModal, setShowPremiumModal] = useState(false);
+    const [showPrometheusModal, setShowPrometheusModal] = useState(false);
 
     const streamingContentRef = useRef('');
     const activeChatIdRef = useRef<string | undefined>(currentChatId);
@@ -223,6 +223,7 @@ export function ChatPage() {
                 await sendMessage(apiMessages, {
                     model: selected_model,
                     systemPrompt: system_instruction,
+                    isPremium, // Ativa modo detalhado para Premium
                 });
             } catch (error) {
                 console.error('Erro ao enviar mensagem:', error);
@@ -290,7 +291,7 @@ export function ChatPage() {
                 onLogout={signOut}
                 loading={chatsLoading}
                 isPremium={isPremium}
-                onUpgrade={() => setShowPremiumModal(true)}
+                onUpgrade={() => setShowPrometheusModal(true)}
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
             />
@@ -328,15 +329,15 @@ export function ChatPage() {
                 </div>
             </div>
 
-            {/* Modal de Pagamento Premium */}
+            {/* Modal Prometheus */}
             {user && (
-                <PremiumPaymentModal
-                    isOpen={showPremiumModal}
-                    onClose={() => setShowPremiumModal(false)}
+                <PrometheusModal
+                    isOpen={showPrometheusModal}
+                    onClose={() => setShowPrometheusModal(false)}
                     userId={user.id}
                     onSuccess={() => {
-                        setShowPremiumModal(false);
-                        alert('⚡ ASSINATURA PREMIUM ATIVADA! Aproveite a IA de Elite.');
+                        setShowPrometheusModal(false);
+                        alert('🔥 PROMETHEUS ATIVADO! O fogo do conhecimento é seu.');
                     }}
                 />
             )}

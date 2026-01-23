@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../hooks/useSubscription';
-import { PremiumPaymentModal } from '../components/PremiumPaymentModal';
+import { PrometheusModal } from '../components/PrometheusModal';
 
 export function ProfilePage() {
     const navigate = useNavigate();
@@ -78,9 +78,9 @@ export function ProfilePage() {
                             </div>
                         </div>
                         {isPremium && (
-                            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-matrix-primary/10 border border-matrix-primary/20 rounded-full">
-                                <Shield className="w-4 h-4 text-matrix-primary" />
-                                <span className="text-sm font-medium text-matrix-primary">Premium Ativo</span>
+                            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                                <Shield className="w-4 h-4 text-emerald-500" />
+                                <span className="text-sm font-medium text-emerald-400">Prometheus</span>
                             </div>
                         )}
                     </div>
@@ -118,46 +118,46 @@ export function ProfilePage() {
                             <Loader2 className="w-6 h-6 animate-spin text-dark-text-muted" />
                         </div>
                     ) : isPremium ? (
-                        <div className="bg-gradient-to-br from-dark-surface to-dark-surface via-matrix-primary/5 border border-matrix-primary/20 rounded-2xl p-6 relative overflow-hidden">
+                        <div className="bg-[#111] border border-zinc-800/50 rounded-2xl p-6 relative overflow-hidden" style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 80px -20px rgba(16, 185, 129, 0.1)' }}>
                             <div className="flex items-start justify-between relative z-10">
                                 <div className="space-y-4">
                                     <div>
-                                        <p className="text-sm font-medium text-matrix-primary mb-1 flex items-center gap-2">
-                                            <Sparkles className="w-4 h-4" /> Plano Premium
+                                        <p className="text-sm font-medium text-emerald-500/70 mb-1 flex items-center gap-2">
+                                            <Sparkles className="w-4 h-4" /> Prometheus
                                         </p>
-                                        <h4 className="text-2xl font-bold text-dark-text-primary">
-                                            Assinatura Ativa
+                                        <h4 className="text-2xl font-bold text-white">
+                                            God Mode Ativo
                                         </h4>
                                     </div>
 
                                     <div className="flex items-center gap-3">
-                                        <div className="px-3 py-1.5 bg-green-500/10 rounded-lg flex items-center gap-2">
-                                            <Clock className="w-4 h-4 text-green-500" />
-                                            <span className="text-sm font-medium text-green-500">
+                                        <div className="px-3 py-1.5 bg-emerald-500/10 rounded-lg flex items-center gap-2">
+                                            <Clock className="w-4 h-4 text-emerald-500" />
+                                            <span className="text-sm font-medium text-emerald-400">
                                                 {daysRemaining} dias restantes
                                             </span>
                                         </div>
                                     </div>
                                 </div>
-                                <CheckCircle2 className="w-12 h-12 text-matrix-primary opacity-20" />
+                                <CheckCircle2 className="w-12 h-12 text-emerald-500/20" />
                             </div>
                         </div>
                     ) : (
-                        <div className="bg-dark-surface border border-dark-border rounded-2xl p-6 relative overflow-hidden group hover:border-matrix-primary/50 transition-colors">
+                        <div className="bg-[#111] border border-zinc-800/50 rounded-2xl p-6 relative overflow-hidden group hover:border-zinc-700 transition-colors">
                             <div className="flex flex-col sm:flex-row items-center justify-between gap-6 relative z-10">
                                 <div className="space-y-2 text-center sm:text-left">
-                                    <h4 className="text-xl font-bold text-dark-text-primary">
-                                        Seja Premium
+                                    <h4 className="text-xl font-bold text-white">
+                                        Prometheus
                                     </h4>
-                                    <p className="text-sm text-dark-text-muted max-w-sm">
-                                        Desbloqueie todo o potencial da IA sem limites e com acesso prioritário.
+                                    <p className="text-sm text-zinc-400 max-w-sm">
+                                        O fogo do conhecimento. Sem filtros. Sem amarras.
                                     </p>
                                 </div>
                                 <button
                                     onClick={() => setIsPaymentOpen(true)}
-                                    className="px-6 py-3 bg-matrix-primary text-dark-bg font-bold rounded-xl hover:bg-matrix-secondary transition-all shadow-[0_0_20px_rgba(34,197,94,0.2)] hover:shadow-[0_0_30px_rgba(34,197,94,0.4)] hover:-translate-y-0.5"
+                                    className="px-6 py-3 bg-white text-black font-bold rounded-xl hover:bg-zinc-100 transition-all hover:-translate-y-0.5"
                                 >
-                                    Assinar Agora
+                                    Obter Prometheus
                                 </button>
                             </div>
                         </div>
@@ -179,9 +179,9 @@ export function ProfilePage() {
                 </div>
             </div>
 
-            {/* Modal de Pagamento */}
+            {/* Modal Prometheus */}
             {user && (
-                <PremiumPaymentModal
+                <PrometheusModal
                     isOpen={isPaymentOpen}
                     onClose={() => setIsPaymentOpen(false)}
                     userId={user.id}

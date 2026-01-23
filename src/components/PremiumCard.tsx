@@ -1,88 +1,68 @@
 // =====================================================
-// PremiumCard - Card promocional na Sidebar
+// PrometheusCard - Elite Sidebar CTA
 // =====================================================
-// Exibe CTA para upgrade Premium quando usuário não é assinante
-// Design Matrix com gradiente verde e animação
+// Dark God Mode - Compact but impactful
+// Features: GOD MODE tag + Flame icon + Clean layout
 // =====================================================
 
-import { Zap, Crown } from 'lucide-react';
+import { Flame } from 'lucide-react';
 
-interface PremiumCardProps {
+interface PrometheusCardProps {
     onUpgrade: () => void;
 }
 
-export function PremiumCard({ onUpgrade }: PremiumCardProps) {
+export function PrometheusCard({ onUpgrade }: PrometheusCardProps) {
     return (
-        <div className="mx-2 mb-2">
+        <div className="px-2">
             <div
                 onClick={onUpgrade}
-                className="relative overflow-hidden rounded-xl p-4 cursor-pointer transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] group"
+                className="relative overflow-hidden rounded-lg p-3 cursor-pointer transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] group bg-gradient-to-b from-zinc-900 to-black border border-zinc-800 hover:border-zinc-700"
                 style={{
-                    background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(16, 185, 129, 0.1) 50%, rgba(5, 150, 105, 0.15) 100%)',
-                    border: '1px solid rgba(34, 197, 94, 0.3)',
+                    boxShadow: '0 4px 20px -8px rgba(0, 0, 0, 0.8)',
                 }}
             >
-                {/* Efeito de brilho animado */}
+                {/* Subtle inner glow on hover */}
                 <div
-                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-lg"
                     style={{
-                        background: 'linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.1), transparent)',
-                        animation: 'shimmer 2s infinite',
+                        background: 'radial-gradient(ellipse at 50% 0%, rgba(251, 146, 60, 0.08) 0%, transparent 60%)',
                     }}
                 />
 
-                {/* Conteúdo */}
+                {/* Content */}
                 <div className="relative z-10">
-                    {/* Header com ícone */}
-                    <div className="flex items-center gap-2 mb-2">
-                        <div className="p-1.5 rounded-lg bg-matrix-primary/20">
-                            <Zap className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                        </div>
-                        <span className="text-xs font-bold text-matrix-primary uppercase tracking-wider">
-                            Premium
+                    {/* Top Row: GOD MODE tag + Flame */}
+                    <div className="flex items-center gap-1.5 mb-2">
+                        <Flame className="w-3 h-3 text-orange-400/80" />
+                        <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-orange-400/70">
+                            God Mode
                         </span>
                     </div>
 
-                    {/* Título */}
-                    <h3 className="text-sm font-bold text-dark-text-primary mb-1 flex items-center gap-1.5">
-                        <Crown className="w-4 h-4 text-yellow-400" />
-                        EVOLUA PARA O PREMIUM
-                    </h3>
-
-                    {/* Descrição */}
-                    <p className="text-xs text-dark-text-muted mb-3 leading-relaxed">
-                        IA de elite sem censura, respostas mais rápidas e completas
-                    </p>
-
-                    {/* CTA */}
+                    {/* Main Row: PROMETHEUS + Action */}
                     <div className="flex items-center justify-between">
-                        <span className="text-xs text-matrix-primary font-mono">
-                            R$ 34,90/mês
+                        <span className="text-xs font-semibold uppercase tracking-[0.12em] text-zinc-300">
+                            Prometheus
                         </span>
-                        <span className="text-xs text-matrix-primary font-medium group-hover:translate-x-1 transition-transform">
-                            Assinar →
+                        <span className="text-[10px] text-zinc-500 group-hover:text-orange-400/80 transition-colors duration-300">
+                            Ativar →
                         </span>
                     </div>
                 </div>
 
-                {/* Decoração de fundo */}
+                {/* Decorative ember glow (bottom right) */}
                 <div
-                    className="absolute -bottom-4 -right-4 w-20 h-20 opacity-5"
+                    className="absolute -bottom-2 -right-2 w-16 h-16 opacity-20 group-hover:opacity-40 transition-opacity duration-500 pointer-events-none"
                     style={{
-                        background: 'radial-gradient(circle, rgba(34, 197, 94, 1) 0%, transparent 70%)',
+                        background: 'radial-gradient(circle, rgba(251, 146, 60, 0.4) 0%, transparent 70%)',
                     }}
                 />
             </div>
-
-            {/* CSS para animação shimmer */}
-            <style>{`
-                @keyframes shimmer {
-                    0% { transform: translateX(-100%); }
-                    100% { transform: translateX(100%); }
-                }
-            `}</style>
         </div>
     );
 }
 
-export default PremiumCard;
+// Keep backwards compatibility
+export const PremiumCard = PrometheusCard;
+
+export default PrometheusCard;

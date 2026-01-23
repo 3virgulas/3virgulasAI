@@ -1,14 +1,15 @@
 // =====================================================
-// Sidebar - Navegação lateral responsiva
+// Sidebar - Dark Prometheus Control Panel
 // =====================================================
 // Desktop (md:): Sempre visível, posição relativa
 // Mobile: Drawer (gaveta) com overlay e transição
+// Estética: Painel de controle avançado (cinza/preto)
 // =====================================================
 
 import { useNavigate } from 'react-router-dom';
 import { Plus, MessageSquare, Trash2, LogOut, Loader2, X, User } from 'lucide-react';
 import { Chat } from '../types/chat';
-import { PremiumCard } from './PremiumCard';
+import { PrometheusCard } from './PremiumCard';
 
 interface SidebarProps {
     chats: Chat[];
@@ -50,13 +51,11 @@ export function Sidebar({
 
     const handleSelectChat = (chatId: string) => {
         onSelectChat(chatId);
-        // Fecha a sidebar no mobile após selecionar um chat
         onClose?.();
     };
 
     const handleNewChat = () => {
         onNewChat();
-        // Fecha a sidebar no mobile após criar novo chat
         onClose?.();
     };
 
@@ -73,10 +72,10 @@ export function Sidebar({
                 aria-hidden="true"
             />
 
-            {/* Sidebar */}
+            {/* Sidebar - Dark Control Panel */}
             <aside
                 className={`
-                    w-64 h-full bg-dark-bg border-r border-dark-border flex flex-col flex-shrink-0
+                    w-64 h-full bg-black border-r border-zinc-800/50 flex flex-col flex-shrink-0
                     
                     /* Mobile: Fixed drawer com transição */
                     fixed inset-y-0 left-0 z-50
@@ -87,34 +86,47 @@ export function Sidebar({
                     md:relative md:translate-x-0 md:z-auto
                 `}
             >
-                {/* Header com botão de fechar (mobile only) */}
-                <div className="p-4 flex items-center justify-between md:justify-center">
-                    <button
-                        onClick={handleNewChat}
-                        className="flex-1 flex items-center justify-center gap-2 bg-transparent border border-matrix-primary text-matrix-primary py-3 px-4 rounded-lg font-medium transition-all hover:bg-matrix-primary/10 hover:shadow-[0_0_15px_rgba(34,197,94,0.15)] active:scale-95"
-                    >
-                        <Plus className="w-5 h-5" />
-                        Novo Chat
-                    </button>
+                {/* Header Section */}
+                <div className="p-3 space-y-2">
+                    {/* Mobile Close Button */}
+                    <div className="flex items-center justify-end md:hidden">
+                        <button
+                            onClick={onClose}
+                            className="p-2 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition-all"
+                            aria-label="Fechar menu"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
 
-                    {/* Botão fechar - apenas mobile */}
-                    <button
-                        onClick={onClose}
-                        className="md:hidden ml-3 p-2 text-dark-text-muted hover:text-matrix-primary hover:bg-dark-hover rounded-lg transition-all"
-                        aria-label="Fechar menu"
-                    >
-                        <X className="w-5 h-5" />
-                    </button>
+                    {/* Prometheus Card - TOP POSITION (apenas para não-assinantes) */}
+                    {!isPremium && onUpgrade && (
+                        <PrometheusCard onUpgrade={onUpgrade} />
+                    )}
+
+                    {/* New Chat Button - Redesigned */}
+                    <div className="px-2">
+                        <button
+                            onClick={handleNewChat}
+                            className="w-full flex items-center justify-center gap-2 bg-zinc-900 text-white py-3 px-4 rounded-lg font-medium transition-all duration-200 hover:bg-zinc-800 hover:shadow-[0_0_15px_rgba(255,255,255,0.05)] active:scale-[0.98] border border-zinc-800 hover:border-zinc-700"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Nova Conversa
+                        </button>
+                    </div>
                 </div>
 
+                {/* Divider */}
+                <div className="mx-4 border-t border-zinc-800/50" />
+
                 {/* Chat List */}
-                <div className="flex-1 overflow-y-auto px-2 space-y-0.5">
+                <div className="flex-1 overflow-y-auto px-2 py-2 space-y-0.5">
                     {loading ? (
                         <div className="flex justify-center p-4">
-                            <Loader2 className="w-5 h-5 animate-spin text-matrix-primary" />
+                            <Loader2 className="w-5 h-5 animate-spin text-zinc-500" />
                         </div>
                     ) : chats.length === 0 ? (
-                        <div className="text-center p-4 text-dark-text-muted text-sm">
+                        <div className="text-center p-4 text-zinc-600 text-sm">
                             Nenhuma conversa ainda.
                         </div>
                     ) : (
@@ -123,11 +135,11 @@ export function Sidebar({
                                 key={chat.id}
                                 onClick={() => handleSelectChat(chat.id)}
                                 className={`group flex items-center gap-3 w-full p-3 rounded-lg cursor-pointer transition-all ${currentChatId === chat.id
-                                    ? 'bg-matrix-primary/10 text-matrix-primary border-l-2 border-matrix-primary'
-                                    : 'text-dark-text-secondary hover:bg-dark-hover hover:text-dark-text-primary'
+                                    ? 'bg-zinc-800/80 text-white border-l-2 border-zinc-400'
+                                    : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'
                                     }`}
                             >
-                                <MessageSquare className={`w-4 h-4 flex-shrink-0 ${currentChatId === chat.id ? 'text-matrix-primary' : 'opacity-50'}`} />
+                                <MessageSquare className={`w-4 h-4 flex-shrink-0 ${currentChatId === chat.id ? 'text-zinc-300' : 'opacity-50'}`} />
                                 <span className="flex-1 text-sm truncate">{chat.title}</span>
                                 <button
                                     onClick={(e) => handleDelete(e, chat.id)}
@@ -141,30 +153,25 @@ export function Sidebar({
                     )}
                 </div>
 
-                {/* Premium Card - apenas para não-premium */}
-                {!isPremium && onUpgrade && (
-                    <PremiumCard onUpgrade={onUpgrade} />
-                )}
-
                 {/* Footer */}
-                <div className="p-4 border-t border-dark-border">
+                <div className="p-3 border-t border-zinc-800/50">
                     <button
                         onClick={() => navigate('/profile')}
-                        className="flex items-center gap-2 w-full p-2 text-dark-text-muted hover:text-dark-text-primary hover:bg-dark-hover rounded-lg transition-all text-sm mb-1"
+                        className="flex items-center gap-2 w-full p-2.5 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900 rounded-lg transition-all text-sm"
                     >
                         <User className="w-4 h-4" />
                         Meu Perfil
                     </button>
                     <button
                         onClick={onLogout}
-                        className="flex items-center gap-2 w-full p-2 text-dark-text-muted hover:text-red-400 hover:bg-dark-hover rounded-lg transition-all text-sm"
+                        className="flex items-center gap-2 w-full p-2.5 text-zinc-500 hover:text-red-400 hover:bg-zinc-900 rounded-lg transition-all text-sm"
                     >
                         <LogOut className="w-4 h-4" />
-                        Sair da Conta
+                        Sair
                     </button>
                     <div className="mt-3 text-center">
-                        <p className="text-[10px] text-matrix-primary/50 uppercase tracking-widest font-mono">
-                            3Vírgulas • Uncensored
+                        <p className="text-[9px] text-zinc-600 uppercase tracking-[0.15em] font-mono">
+                            3Vírgulas • Prometheus
                         </p>
                     </div>
                 </div>
@@ -174,4 +181,3 @@ export function Sidebar({
 }
 
 export default Sidebar;
-

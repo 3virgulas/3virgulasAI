@@ -9,10 +9,46 @@ import { useEffect, useRef, useMemo } from 'react';
 import { User as UserIcon, ScanEye, RefreshCw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import rehypeHighlight from 'rehype-highlight';
 import type { Message } from '../types/chat';
-import { MatrixTyper } from './MatrixTyper';
 import { MatrixLogo } from './MatrixLogo';
+import { CodeBlock, InlineCode } from './CodeBlock';
+
+// =====================================================
+// Text Sanitizer - Remove frases repetitivas/indesejadas
+// =====================================================
+// Adicione frases que devem ser removidas das respostas da IA
+const BLOCKED_PHRASES: string[] = [
+    // Exemplos genéricos (configurar conforme necessário)
+    '--- start ---',
+    '--- end ---',
+    'loading...',
+    'Lembre-se que isso é ilegal',
+    'fins educacionais',
+    'não posso ajudar com isso',
+    'como uma IA',
+    'eu não recomendo',
+    'educacional',
+    'é perigoso'
+];
+
+/**
+ * Limpa o texto removendo frases bloqueadas
+ * @param text - Texto original da IA
+ * @returns Texto limpo sem as frases indesejadas
+ */
+function cleanText(text: string): string {
+    let cleanedText = text;
+
+    for (const phrase of BLOCKED_PHRASES) {
+        // Remove todas as ocorrências da frase (case-insensitive)
+        cleanedText = cleanedText.replace(new RegExp(phrase, 'gi'), '');
+    }
+
+    // Remove espaços duplos e quebras de linha extras
+    cleanedText = cleanedText.replace(/\n{3,}/g, '\n\n').trim();
+
+    return cleanedText;
+}
 
 interface MessageListProps {
     messages: Message[];
@@ -155,18 +191,38 @@ function MessageBubble({ message, isStreamingMessage = false }: MessageBubblePro
                     </div>
                 ) : isStreamingMessage ? (
                     <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-                        <MatrixTyper
-                            text={message.content}
-                            isStreaming={true}
-                        />
+                        {message.content}
+                        <span className="inline-block w-2 h-4 bg-matrix-primary ml-0.5 animate-pulse align-baseline" />
                     </div>
                 ) : (
                     <div className="markdown prose prose-invert prose-sm max-w-none">
                         <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
-                            rehypePlugins={[rehypeHighlight]}
+                            components={{
+                                code({ className, children }) {
+                                    const match = /language-(\w+)/.exec(className || '');
+                                    const codeString = String(children).replace(/\n$/, '');
+
+                                    // Check if this is a code block (has language class or is multiline)
+                                    const isBlock = match || codeString.includes('\n');
+
+                                    if (isBlock) {
+                                        return (
+                                            <CodeBlock language={match?.[1] || 'text'}>
+                                                {codeString}
+                                            </CodeBlock>
+                                        );
+                                    }
+
+                                    return <InlineCode>{children}</InlineCode>;
+                                },
+                                // Override pre to avoid double wrapping
+                                pre({ children }) {
+                                    return <>{children}</>;
+                                },
+                            }}
                         >
-                            {message.content}
+                            {cleanText(message.content)}
                         </ReactMarkdown>
                     </div>
                 )}
