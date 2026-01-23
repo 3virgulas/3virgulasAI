@@ -5,14 +5,14 @@
 // VISION PROXY: Feedback visual durante análise de imagem
 // =====================================================
 
-import { useEffect, useRef, useMemo, useState } from 'react';
-import { Bot, User as UserIcon, ScanEye, RefreshCw } from 'lucide-react';
+import { useEffect, useRef, useMemo } from 'react';
+import { User as UserIcon, ScanEye, RefreshCw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import type { Message } from '../types/chat';
-import { useSettings } from '../contexts/SettingsContext';
 import { MatrixTyper } from './MatrixTyper';
+import { MatrixLogo } from './MatrixLogo';
 
 interface MessageListProps {
     messages: Message[];
@@ -30,7 +30,6 @@ export function MessageList({
     reconnectAttempt = 0,
 }: MessageListProps) {
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const { settings } = useSettings();
 
     const uniqueMessages = useMemo(() => {
         const seen = new Set<string>();
@@ -49,8 +48,8 @@ export function MessageList({
         return (
             <div className="flex-1 flex items-center justify-center text-dark-text-muted">
                 <div className="text-center max-w-md px-6">
-                    <div className="w-20 h-20 mx-auto mb-4 rounded-full overflow-hidden bg-dark-surface border border-dark-border">
-                        <AvatarImage src={settings.aiAvatarUrl} />
+                    <div className="w-32 h-32 mx-auto mb-4">
+                        <MatrixLogo className="w-32 h-32" />
                     </div>
                     <h2 className="text-xl font-semibold text-dark-text-primary mb-2">
                         Bem-vindo ao 3Vírgulas Chat
@@ -71,7 +70,6 @@ export function MessageList({
                     key={message.id}
                     message={message}
                     isStreamingMessage={message.id.startsWith('streaming-')}
-                    avatarUrl={settings.aiAvatarUrl}
                 />
             ))}
 
@@ -113,33 +111,6 @@ export function MessageList({
     );
 }
 
-// =====================================================
-// AvatarImage - Com fallback para ícone
-// =====================================================
-
-function AvatarImage({ src, size = 'md' }: { src: string; size?: 'sm' | 'md' }) {
-    const [hasError, setHasError] = useState(false);
-
-    const sizeClasses = size === 'sm' ? 'w-8 h-8' : 'w-20 h-20';
-    const iconSize = size === 'sm' ? 'w-5 h-5' : 'w-10 h-10';
-
-    if (hasError || !src) {
-        return (
-            <div className={`${sizeClasses} flex items-center justify-center bg-matrix-primary`}>
-                <Bot className={`${iconSize} text-dark-bg`} />
-            </div>
-        );
-    }
-
-    return (
-        <img
-            src={src}
-            alt="Avatar da IA"
-            className={`${sizeClasses} object-cover`}
-            onError={() => setHasError(true)}
-        />
-    );
-}
 
 // =====================================================
 // MessageBubble - Estilo Premium com Efeito Hacker
@@ -148,10 +119,9 @@ function AvatarImage({ src, size = 'md' }: { src: string; size?: 'sm' | 'md' }) 
 interface MessageBubbleProps {
     message: Message;
     isStreamingMessage?: boolean;
-    avatarUrl: string;
 }
 
-function MessageBubble({ message, isStreamingMessage = false, avatarUrl }: MessageBubbleProps) {
+function MessageBubble({ message, isStreamingMessage = false }: MessageBubbleProps) {
     const isUser = message.role === 'user';
     const isEmpty = !message.content || message.content.trim() === '';
     const hasImage = message.content.startsWith('📷');
@@ -163,8 +133,8 @@ function MessageBubble({ message, isStreamingMessage = false, avatarUrl }: Messa
         >
             {/* Avatar do assistente */}
             {!isUser && (
-                <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 mt-1 bg-dark-surface border border-dark-border">
-                    <AvatarImage src={avatarUrl} size="sm" />
+                <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0">
+                    <MatrixLogo className="w-16 h-16 md:w-20 md:h-20" />
                 </div>
             )}
 
