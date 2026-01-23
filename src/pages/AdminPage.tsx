@@ -5,7 +5,7 @@ import { useAppSettings } from '../hooks/useAppSettings';
 import { supabase } from '../lib/supabase';
 import {
     Settings, Save, Loader2, ArrowLeft, Sparkles, Bot, ImageIcon, Eye, Cpu,
-    Crown, Users, Zap, RefreshCw, Plus, Minus, Check, Ban, MoreVertical,
+    Crown, Users, Zap, RefreshCw, Plus, Minus, Check, Ban,
     Phone, Mail, Calendar, Hash, Trash2
 } from 'lucide-react';
 import type { Subscription } from '../types/subscription';
@@ -389,7 +389,7 @@ export function AdminPage() {
     };
 
     // Format phone for display
-    const formatPhone = (phone: string | null) => {
+    const formatPhone = (phone: string | null | undefined) => {
         if (!phone) return '—';
         const cleaned = phone.replace(/\D/g, '');
         if (cleaned.length === 11) {

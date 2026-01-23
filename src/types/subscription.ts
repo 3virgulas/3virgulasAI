@@ -2,7 +2,7 @@
 // Subscription Types - Tipos para assinaturas Premium
 // =====================================================
 
-export type SubscriptionStatus = 'pending' | 'active' | 'expired';
+export type SubscriptionStatus = 'pending' | 'active' | 'expired' | 'canceled' | 'banned';
 
 export interface Subscription {
     id: string;

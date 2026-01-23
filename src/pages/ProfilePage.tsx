@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    User, Mail, Phone, Calendar, Shield, CreditCard,
+    User, Mail, Phone, Shield, CreditCard,
     LogOut, ChevronLeft, Loader2, Sparkles, CheckCircle2,
-    Clock, AlertCircle
+    Clock
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../hooks/useSubscription';
