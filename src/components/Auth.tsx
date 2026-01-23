@@ -1,15 +1,28 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Mail, Lock, Loader2, AlertCircle, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Loader2, AlertCircle, ArrowRight, Eye, EyeOff, Phone } from 'lucide-react';
+
+// Formatar telefone enquanto digita
+const formatPhone = (value: string): string => {
+    const numbers = value.replace(/\D/g, '').slice(0, 11);
+    if (numbers.length <= 2) return numbers;
+    if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
+};
 
 export function Auth() {
     const { signIn, signUp } = useAuth();
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [phone, setPhone] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const handlePhoneChange = (value: string) => {
+        setPhone(formatPhone(value));
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -20,7 +33,14 @@ export function Auth() {
             if (isLogin) {
                 await signIn(email, password);
             } else {
-                await signUp(email, password);
+                // Validar telefone no cadastro
+                const cleanPhone = phone.replace(/\D/g, '');
+                if (cleanPhone.length < 10) {
+                    setError('Digite um telefone válido com DDD');
+                    setLoading(false);
+                    return;
+                }
+                await signUp(email, password, cleanPhone);
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Ocorreu um erro inesperado');
@@ -70,6 +90,26 @@ export function Auth() {
                                 />
                             </div>
                         </div>
+
+                        {/* WhatsApp - apenas no cadastro */}
+                        {!isLogin && (
+                            <div className="space-y-2">
+                                <label className="text-sm text-dark-text-muted">WhatsApp</label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Phone className="h-5 w-5 text-dark-text-muted" />
+                                    </div>
+                                    <input
+                                        type="tel"
+                                        value={phone}
+                                        onChange={(e) => handlePhoneChange(e.target.value)}
+                                        className="block w-full pl-10 pr-4 py-3 bg-dark-hover border border-dark-border rounded-lg text-dark-text-primary placeholder-dark-text-muted focus:outline-none focus:border-matrix-primary/50 transition-colors"
+                                        placeholder="(11) 99999-9999"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                        )}
 
                         {/* Password */}
                         <div className="space-y-2">
@@ -135,7 +175,11 @@ export function Auth() {
 
                         <button
                             type="button"
-                            onClick={() => setIsLogin(!isLogin)}
+                            onClick={() => {
+                                setIsLogin(!isLogin);
+                                setError(null);
+                                setPhone('');
+                            }}
                             className="mt-4 w-full flex items-center justify-center py-2.5 px-4 rounded-lg text-dark-text-secondary hover:text-dark-text-primary hover:bg-dark-hover text-sm transition-colors"
                         >
                             {isLogin ? 'Criar nova conta' : 'Fazer login'}

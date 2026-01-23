@@ -5,8 +5,10 @@
 // Mobile: Drawer (gaveta) com overlay e transição
 // =====================================================
 
-import { Plus, MessageSquare, Trash2, LogOut, Loader2, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, MessageSquare, Trash2, LogOut, Loader2, X, User } from 'lucide-react';
 import { Chat } from '../types/chat';
+import { PremiumCard } from './PremiumCard';
 
 interface SidebarProps {
     chats: Chat[];
@@ -16,6 +18,9 @@ interface SidebarProps {
     onDeleteChat: (chatId: string) => void;
     onLogout: () => void;
     loading?: boolean;
+    // Premium props
+    isPremium?: boolean;
+    onUpgrade?: () => void;
     // Mobile drawer props
     isOpen?: boolean;
     onClose?: () => void;
@@ -29,9 +34,13 @@ export function Sidebar({
     onDeleteChat,
     onLogout,
     loading,
+    isPremium = false,
+    onUpgrade,
     isOpen = true,
     onClose,
 }: SidebarProps) {
+    const navigate = useNavigate();
+
     const handleDelete = (e: React.MouseEvent, chatId: string) => {
         e.stopPropagation();
         if (confirm('Tem certeza que deseja excluir esta conversa?')) {
@@ -132,8 +141,20 @@ export function Sidebar({
                     )}
                 </div>
 
+                {/* Premium Card - apenas para não-premium */}
+                {!isPremium && onUpgrade && (
+                    <PremiumCard onUpgrade={onUpgrade} />
+                )}
+
                 {/* Footer */}
                 <div className="p-4 border-t border-dark-border">
+                    <button
+                        onClick={() => navigate('/profile')}
+                        className="flex items-center gap-2 w-full p-2 text-dark-text-muted hover:text-dark-text-primary hover:bg-dark-hover rounded-lg transition-all text-sm mb-1"
+                    >
+                        <User className="w-4 h-4" />
+                        Meu Perfil
+                    </button>
                     <button
                         onClick={onLogout}
                         className="flex items-center gap-2 w-full p-2 text-dark-text-muted hover:text-red-400 hover:bg-dark-hover rounded-lg transition-all text-sm"

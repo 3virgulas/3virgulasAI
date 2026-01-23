@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 // AuthContext
 // =====================================================
 // Gerencia a sessão do usuário e métodos de autenticação
+// Inclui salvamento de telefone no cadastro (profiles)
 // =====================================================
 
 interface AuthContextType {
@@ -13,7 +14,7 @@ interface AuthContextType {
     user: User | null;
     isLoading: boolean;
     signIn: (email: string, password: string) => Promise<void>;
-    signUp: (email: string, password: string) => Promise<void>;
+    signUp: (email: string, password: string, cellphone?: string) => Promise<void>;
     signOut: () => Promise<void>;
 }
 
@@ -50,12 +51,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (error) throw error;
     };
 
-    const signUp = async (email: string, password: string) => {
-        const { error } = await supabase.auth.signUp({
+    const signUp = async (email: string, password: string, cellphone?: string) => {
+        const { data, error } = await supabase.auth.signUp({
             email,
             password,
         });
         if (error) throw error;
+
+        // Após cadastro, atualizar ou criar perfil com o celular
+        if (data.user && cellphone) {
+            // Aguardar um pouco para o trigger criar o perfil (se existir)
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Tentar atualizar o perfil existente
+            const { error: updateError } = await supabase
+                .from('profiles')
+                .update({
+                    cellphone: cellphone,
+                    email: email
+                })
+                .eq('id', data.user.id);
+
+            // Se não existir, criar novo
+            if (updateError) {
+                await supabase
+                    .from('profiles')
+                    .upsert({
+                        id: data.user.id,
+                        email: email,
+                        cellphone: cellphone
+                    });
+            }
+        }
     };
 
     const signOut = async () => {

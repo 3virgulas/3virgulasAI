@@ -11,6 +11,7 @@ import { useChats } from '../hooks/useChats';
 import { useMessages } from '../hooks/useMessages';
 import { useOpenRouter } from '../hooks/useOpenRouter';
 import { useAppSettings } from '../hooks/useAppSettings';
+import { useSubscription } from '../hooks/useSubscription';
 import { generateChatTitle } from '../lib/openrouter';
 import { env } from '../config/env';
 import { useAuth } from '../contexts/AuthContext';
@@ -18,6 +19,7 @@ import { Sidebar } from '../components/Sidebar';
 import { MobileHeader } from '../components/MobileHeader';
 import { MessageList } from '../components/MessageList';
 import { ChatInput } from '../components/ChatInput';
+import { PremiumPaymentModal } from '../components/PremiumPaymentModal';
 import { Settings } from 'lucide-react';
 
 const ADMIN_EMAIL = 'contato@3virgulas.com';
@@ -35,6 +37,7 @@ export function ChatPage() {
     const [_isGeneratingTitle, setIsGeneratingTitle] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [showPremiumModal, setShowPremiumModal] = useState(false);
 
     const streamingContentRef = useRef('');
     const activeChatIdRef = useRef<string | undefined>(currentChatId);
@@ -59,7 +62,10 @@ export function ChatPage() {
         isStreaming: messagesStreaming,
     } = useMessages(currentChatId);
 
-    const { getSettings, refreshSettings } = useAppSettings();
+    const { getSettings, getPremiumSettings, refreshSettings } = useAppSettings();
+
+    // Hook de assinatura Premium
+    const { isPremium } = useSubscription(user?.id);
 
     useEffect(() => {
         activeChatIdRef.current = currentChatId;
@@ -131,7 +137,10 @@ export function ChatPage() {
     const handleSendMessage = useCallback(
         async (content: string, imageBase64?: string, parsedFile?: import('../lib/fileParser').ParsedFile) => {
             await refreshSettings();
-            const { selected_model, system_instruction, vision_model } = getSettings();
+
+            // Usar configurações Premium se for assinante ativo
+            const settings = isPremium ? getPremiumSettings() : getSettings();
+            const { selected_model, system_instruction, vision_model } = settings;
 
             let activeChatId = currentChatId;
 
@@ -280,6 +289,8 @@ export function ChatPage() {
                 onDeleteChat={handleDeleteChat}
                 onLogout={signOut}
                 loading={chatsLoading}
+                isPremium={isPremium}
+                onUpgrade={() => setShowPremiumModal(true)}
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
             />
@@ -316,6 +327,19 @@ export function ChatPage() {
                     />
                 </div>
             </div>
+
+            {/* Modal de Pagamento Premium */}
+            {user && (
+                <PremiumPaymentModal
+                    isOpen={showPremiumModal}
+                    onClose={() => setShowPremiumModal(false)}
+                    userId={user.id}
+                    onSuccess={() => {
+                        setShowPremiumModal(false);
+                        alert('⚡ ASSINATURA PREMIUM ATIVADA! Aproveite a IA de Elite.');
+                    }}
+                />
+            )}
         </div>
     );
 }

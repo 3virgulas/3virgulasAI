@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { Auth } from './components/Auth';
+import { ProfilePage } from './pages/ProfilePage';
 import { ChatPage } from './pages/ChatPage';
 import { AdminPage } from './pages/AdminPage';
 
@@ -29,6 +30,7 @@ function AppContent() {
     return (
         <Routes>
             <Route path="/" element={<ChatPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
             <Route path="/admin" element={<AdminPage />} />
         </Routes>
     );
