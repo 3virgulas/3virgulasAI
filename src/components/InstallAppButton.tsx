@@ -7,7 +7,7 @@
 // =====================================================
 
 import { useState, useEffect } from 'react';
-import { Download, X, Share } from 'lucide-react';
+import { Download, X, Share, PlusSquare, Check } from 'lucide-react';
 
 // BeforeInstallPromptEvent interface (not in standard TS)
 interface BeforeInstallPromptEvent extends Event {
@@ -99,74 +99,74 @@ export function InstallAppButton() {
                 <span>Instalar App</span>
             </button>
 
-            {/* iOS Instructions Modal */}
+            {/* iOS Instructions Modal - Elite Design */}
             {showIOSModal && (
                 <div className="fixed inset-0 z-[100] flex items-end justify-center p-4 notranslate" translate="no">
                     {/* Backdrop */}
                     <div
-                        className="absolute inset-0 bg-black/80"
+                        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
                         onClick={() => setShowIOSModal(false)}
                     />
 
-                    {/* Modal */}
-                    <div className="relative w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl p-5 mb-4 animate-in slide-in-from-bottom duration-300">
+                    {/* Modal Card */}
+                    <div className="relative w-full max-w-sm bg-zinc-950/90 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mb-4 shadow-2xl animate-in slide-in-from-bottom duration-300">
                         {/* Close */}
                         <button
                             onClick={() => setShowIOSModal(false)}
-                            className="absolute top-3 right-3 p-2 text-zinc-500 hover:text-white rounded-lg transition-colors"
+                            className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors"
                         >
                             <X className="w-5 h-5" />
                         </button>
 
                         {/* Header */}
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
-                                <img
-                                    src="/pwa-192x192.png"
-                                    alt="Prometheus"
-                                    className="w-10 h-10 rounded-lg"
-                                />
+                        <div className="mb-6">
+                            <h3 className="text-xl font-bold text-white mb-1">Instalar Prometheus</h3>
+                            <p className="text-sm text-zinc-500">Acesso nativo ao sistema.</p>
+                        </div>
+
+                        {/* Instructions Grid */}
+                        <div className="space-y-4">
+                            {/* Step 1: Share */}
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center flex-shrink-0 border border-white/5">
+                                    <Share className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-zinc-300">
+                                        Toque no botão <span className="text-white font-medium">Compartilhar</span>
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 className="text-lg font-semibold text-white">Instalar Prometheus</h3>
-                                <p className="text-xs text-zinc-500">Acesso rápido como app nativo</p>
+
+                            {/* Step 2: Add to Home */}
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center flex-shrink-0 border border-white/5">
+                                    <PlusSquare className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-zinc-300">
+                                        Selecione <span className="text-white font-medium">Adicionar à Tela de Início</span>
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Step 3: Done */}
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center flex-shrink-0 border border-white/5">
+                                    <Check className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-zinc-300">
+                                        Acesse pelo ícone na sua home
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Instructions */}
-                        <div className="space-y-3 text-sm">
-                            <div className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg">
-                                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-xs">
-                                    1
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-zinc-300">Toque no botão <span className="inline-flex items-center gap-1 text-blue-400"><Share className="w-4 h-4" /> Compartilhar</span></p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg">
-                                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-xs">
-                                    2
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-zinc-300">Role e toque em <span className="text-white font-medium">"Adicionar à Tela de Início"</span></p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg">
-                                <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-xs">
-                                    ✓
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-zinc-300">Pronto! O app aparecerá na sua tela inicial</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Footer */}
+                        {/* Action Button */}
                         <button
                             onClick={() => setShowIOSModal(false)}
-                            className="w-full mt-4 py-3 px-4 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-xl transition-colors"
+                            className="w-full mt-8 py-3.5 px-4 bg-white hover:bg-zinc-200 text-black font-bold rounded-xl transition-colors shadow-lg shadow-white/5"
                         >
                             Entendi
                         </button>
