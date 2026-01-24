@@ -1,13 +1,13 @@
 // =====================================================
 // MessageList Component (PERFORMANCE OPTIMIZED)
 // =====================================================
-// Lista de mensagens com efeito Matrix/Hacker
+// Clean Terminal Style - 100% content focused
 // VISION PROXY: Feedback visual durante análise de imagem
 // OPTIMIZATION: React.memo on MessageBubble to prevent re-renders
 // =====================================================
 
 import React, { useEffect, useRef, useMemo } from 'react';
-import { User as UserIcon, ScanEye, RefreshCw } from 'lucide-react';
+import { ScanEye, RefreshCw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Message } from '../types/chat';
@@ -180,7 +180,11 @@ export function MessageList({
 
 
 // =====================================================
-// MessageBubble - Estilo Premium com Efeito Hacker
+// MessageBubble - Clean Terminal Style (NO AVATARS)
+// =====================================================
+// Layout focado 100% no conteúdo
+// IA: Fundo transparente, alinhado à esquerda
+// Usuário: Fundo cinza escuro, alinhado à direita
 // OPTIMIZATION: React.memo to prevent re-renders during streaming
 // =====================================================
 
@@ -197,22 +201,13 @@ const MessageBubble = React.memo(function MessageBubble({ message, isStreamingMe
 
     return (
         <div
-            className={`flex items-start gap-3 animate-in ${isUser ? 'justify-end' : 'justify-start'
-                }`}
+            className={`flex animate-in ${isUser ? 'justify-end' : 'justify-start'}`}
         >
-            {/* Avatar do assistente */}
-            {!isUser && (
-                <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0">
-                    <MatrixLogo className="w-16 h-16 md:w-20 md:h-20" />
-                </div>
-            )}
-
-            {/* Balão da mensagem */}
-            {/* OPTIMIZATION: backdrop-blur only on desktop (md:backdrop-blur-md) */}
+            {/* Balão da mensagem - Clean Terminal Style */}
             <div
-                className={`max-w-[85%] ${isUser
-                    ? 'px-4 py-2.5 rounded-2xl rounded-tr-sm bg-zinc-700/50 md:bg-zinc-700/30 md:backdrop-blur-md border border-zinc-700/50 text-white'
-                    : 'px-0 py-1 bg-transparent'
+                className={`max-w-[90%] md:max-w-[85%] ${isUser
+                    ? 'px-4 py-2.5 rounded-2xl rounded-tr-sm bg-zinc-800 border border-zinc-700/50 text-white'
+                    : 'px-1 py-1 bg-transparent text-zinc-100'
                     }`}
             >
                 {isUser ? (
@@ -221,12 +216,12 @@ const MessageBubble = React.memo(function MessageBubble({ message, isStreamingMe
                     </div>
                 ) : isEmpty && isStreamingMessage ? (
                     <div className="flex items-center">
-                        <span className="inline-block w-2.5 h-5 bg-dark-text-primary animate-pulse" />
+                        <span className="inline-block w-2.5 h-5 bg-zinc-400 animate-pulse" />
                     </div>
                 ) : isStreamingMessage ? (
                     <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
                         {message.content}
-                        <span className="inline-block w-2 h-4 bg-matrix-primary ml-0.5 animate-pulse align-baseline" />
+                        <span className="inline-block w-2 h-4 bg-zinc-400 ml-0.5 animate-pulse align-baseline" />
                     </div>
                 ) : (
                     <div className="markdown prose prose-invert prose-sm max-w-none">
@@ -261,13 +256,6 @@ const MessageBubble = React.memo(function MessageBubble({ message, isStreamingMe
                     </div>
                 )}
             </div>
-
-            {/* Avatar do usuário */}
-            {isUser && (
-                <div className="w-8 h-8 rounded-full bg-zinc-700/50 flex items-center justify-center flex-shrink-0 mt-1">
-                    <UserIcon className="w-4 h-4 text-zinc-400" />
-                </div>
-            )}
         </div>
     );
 });
