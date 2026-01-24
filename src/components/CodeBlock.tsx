@@ -1,11 +1,12 @@
 // =====================================================
-// CodeBlock Component
+// CodeBlock Component (PERFORMANCE OPTIMIZED)
 // =====================================================
 // Terminal-style code renderer with syntax highlighting
 // Features: Copy button, language display, Matrix theme
+// OPTIMIZATION: React.memo to prevent unnecessary re-renders
 // =====================================================
 
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Copy, Check } from 'lucide-react';
@@ -15,7 +16,8 @@ interface CodeBlockProps {
     children: string;
 }
 
-export function CodeBlock({ language = 'text', children }: CodeBlockProps) {
+// OPTIMIZATION: Memoized to prevent re-renders during streaming
+export const CodeBlock = React.memo(function CodeBlock({ language = 'text', children }: CodeBlockProps) {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = useCallback(async () => {
@@ -90,15 +92,15 @@ export function CodeBlock({ language = 'text', children }: CodeBlockProps) {
             </div>
         </div>
     );
-}
+});
 
-// Inline code component for single-line code
-export function InlineCode({ children }: { children: React.ReactNode }) {
+// Inline code component for single-line code (OPTIMIZED with React.memo)
+export const InlineCode = React.memo(function InlineCode({ children }: { children: React.ReactNode }) {
     return (
         <code className="px-1.5 py-0.5 mx-0.5 rounded bg-dark-surface text-matrix-primary font-mono text-sm">
             {children}
         </code>
     );
-}
+});
 
 export default CodeBlock;

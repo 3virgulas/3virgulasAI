@@ -62,9 +62,10 @@ export function Sidebar({
     return (
         <>
             {/* Backdrop/Overlay - apenas mobile */}
+            {/* PERFORMANCE: Fundo sólido sem blur no mobile */}
             <div
                 className={`
-                    md:hidden fixed inset-0 z-40 bg-black/80 backdrop-blur-sm
+                    md:hidden fixed inset-0 z-40 bg-black/90
                     transition-opacity duration-300
                     ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}
                 `}

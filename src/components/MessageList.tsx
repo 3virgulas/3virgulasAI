@@ -1,11 +1,12 @@
 // =====================================================
-// MessageList Component
+// MessageList Component (PERFORMANCE OPTIMIZED)
 // =====================================================
 // Lista de mensagens com efeito Matrix/Hacker
 // VISION PROXY: Feedback visual durante análise de imagem
+// OPTIMIZATION: React.memo on MessageBubble to prevent re-renders
 // =====================================================
 
-import { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { User as UserIcon, ScanEye, RefreshCw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -180,6 +181,7 @@ export function MessageList({
 
 // =====================================================
 // MessageBubble - Estilo Premium com Efeito Hacker
+// OPTIMIZATION: React.memo to prevent re-renders during streaming
 // =====================================================
 
 interface MessageBubbleProps {
@@ -187,7 +189,8 @@ interface MessageBubbleProps {
     isStreamingMessage?: boolean;
 }
 
-function MessageBubble({ message, isStreamingMessage = false }: MessageBubbleProps) {
+// OPTIMIZATION: Memoized component - only re-renders when props change
+const MessageBubble = React.memo(function MessageBubble({ message, isStreamingMessage = false }: MessageBubbleProps) {
     const isUser = message.role === 'user';
     const isEmpty = !message.content || message.content.trim() === '';
     const hasImage = message.content.startsWith('📷');
@@ -205,9 +208,10 @@ function MessageBubble({ message, isStreamingMessage = false }: MessageBubblePro
             )}
 
             {/* Balão da mensagem */}
+            {/* OPTIMIZATION: backdrop-blur only on desktop (md:backdrop-blur-md) */}
             <div
                 className={`max-w-[85%] ${isUser
-                    ? 'px-4 py-2.5 rounded-2xl rounded-tr-sm bg-zinc-700/30 backdrop-blur-md border border-zinc-700/50 text-white'
+                    ? 'px-4 py-2.5 rounded-2xl rounded-tr-sm bg-zinc-700/50 md:bg-zinc-700/30 md:backdrop-blur-md border border-zinc-700/50 text-white'
                     : 'px-0 py-1 bg-transparent'
                     }`}
             >
@@ -266,6 +270,6 @@ function MessageBubble({ message, isStreamingMessage = false }: MessageBubblePro
             )}
         </div>
     );
-}
+});
 
 export default MessageList;

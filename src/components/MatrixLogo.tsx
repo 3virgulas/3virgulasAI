@@ -1,8 +1,12 @@
 // =====================================================
-// MatrixLogo Component
+// MatrixLogo Component (PERFORMANCE OPTIMIZED)
 // =====================================================
 // Animated SVG logo with Matrix-style falling binary code
-// Replaces static AI avatar with dynamic animation
+// Optimizations:
+// - 30fps throttle (instead of 60/120fps)
+// - Reduced particles on mobile (50%)
+// - Visibility-based pause (IntersectionObserver + Page Visibility API)
+// - Removed expensive drop-shadow filter
 // =====================================================
 
 import { useEffect, useRef, useId, useState, useCallback } from 'react';
@@ -11,7 +15,10 @@ interface MatrixLogoProps {
     className?: string;
 }
 
-// Matrix rain column manager
+// Detect mobile for reduced particles
+const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
+// Matrix rain column manager (OPTIMIZED)
 class MatrixComma {
     private drops: number[];
     private speeds: number[];
@@ -21,13 +28,17 @@ class MatrixComma {
     private readonly y: number;
     private readonly width: number;
     private readonly height: number;
+    private readonly trailLength: number;
 
     constructor(x: number, y: number, width: number, height: number) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
-        this.columns = 28;
+        // OPTIMIZATION: Reduce columns on mobile by 50%
+        this.columns = isMobile ? 14 : 28;
+        // OPTIMIZATION: Reduce trail length on mobile
+        this.trailLength = isMobile ? 15 : 30;
         this.fontSize = 12;
         this.drops = [];
         this.speeds = [];
@@ -48,7 +59,7 @@ class MatrixComma {
             const xPos = this.x + i * (this.width / this.columns);
 
             // Draw character trail
-            for (let j = 0; j < 30; j++) {
+            for (let j = 0; j < this.trailLength; j++) {
                 const yPos = this.y + (this.drops[i] - j) * this.fontSize;
 
                 if (yPos > this.y - 100 && yPos < this.y + this.height + 100) {
@@ -60,7 +71,7 @@ class MatrixComma {
                     text.setAttribute('font-size', String(this.fontSize));
                     text.setAttribute('font-weight', 'bold');
                     text.setAttribute('fill', '#0f0');
-                    text.style.filter = 'drop-shadow(0 0 5px #0f0)';
+                    // OPTIMIZATION: Removed drop-shadow filter (GPU killer)
                     text.textContent = char;
 
                     // Opacity: brighter at top of trail
@@ -91,6 +102,9 @@ class MatrixComma {
     }
 }
 
+// Target frame interval for 30fps (~33ms)
+const FRAME_INTERVAL = 33;
+
 export function MatrixLogo({ className = '' }: MatrixLogoProps) {
     const uniqueId = useId();
     const containerRef = useRef<SVGSVGElement>(null);
@@ -102,9 +116,13 @@ export function MatrixLogo({ className = '' }: MatrixLogoProps) {
     const wrapper3Ref = useRef<SVGGElement>(null);
 
     const [isHovering, setIsHovering] = useState(false);
+    const [isVisible, setIsVisible] = useState(true);
+    const [isPageVisible, setIsPageVisible] = useState(true);
+
     const rotationRef = useRef(0);
     const rotationSpeedRef = useRef(0);
     const lastTimeRef = useRef(0);
+    const lastFrameTimeRef = useRef(0);
 
     // Unique IDs for clip paths
     const comma1ClipId = `comma1Clip-${uniqueId}`;
@@ -115,9 +133,42 @@ export function MatrixLogo({ className = '' }: MatrixLogoProps) {
     const centerX = 400;
     const centerY = 427;
 
-    // Matrix rain animation
+    // OPTIMIZATION: Page Visibility API - pause when tab is hidden
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            setIsPageVisible(!document.hidden);
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, []);
+
+    // OPTIMIZATION: IntersectionObserver - pause when offscreen
+    useEffect(() => {
+        if (!containerRef.current) return;
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                setIsVisible(entry.isIntersecting);
+            },
+            { threshold: 0.1 }
+        );
+
+        observer.observe(containerRef.current);
+
+        return () => {
+            observer.disconnect();
+        };
+    }, []);
+
+    // Matrix rain animation (OPTIMIZED with 30fps throttle)
     useEffect(() => {
         if (!comma1Ref.current || !comma2Ref.current || !comma3Ref.current) return;
+
+        // OPTIMIZATION: Don't animate if not visible or page is hidden
+        if (!isVisible || !isPageVisible) return;
 
         const comma1 = new MatrixComma(165, 465, 130, 170);
         const comma2 = new MatrixComma(345, 185, 130, 170);
@@ -125,10 +176,16 @@ export function MatrixLogo({ className = '' }: MatrixLogoProps) {
 
         let animationId: number;
 
-        const animate = () => {
-            if (comma1Ref.current) comma1.draw(comma1Ref.current);
-            if (comma2Ref.current) comma2.draw(comma2Ref.current);
-            if (comma3Ref.current) comma3.draw(comma3Ref.current);
+        const animate = (currentTime: number) => {
+            // OPTIMIZATION: 30fps throttle
+            if (currentTime - lastFrameTimeRef.current >= FRAME_INTERVAL) {
+                lastFrameTimeRef.current = currentTime;
+
+                if (comma1Ref.current) comma1.draw(comma1Ref.current);
+                if (comma2Ref.current) comma2.draw(comma2Ref.current);
+                if (comma3Ref.current) comma3.draw(comma3Ref.current);
+            }
+
             animationId = requestAnimationFrame(animate);
         };
 
@@ -137,7 +194,7 @@ export function MatrixLogo({ className = '' }: MatrixLogoProps) {
         return () => {
             cancelAnimationFrame(animationId);
         };
-    }, []);
+    }, [isVisible, isPageVisible]);
 
     // Rotation animation
     useEffect(() => {

@@ -77,8 +77,9 @@ export function Auth() {
             {/* The Monolith - Glass Black Container */}
             <div className="relative w-full max-w-md">
                 {/* Login Card */}
+                {/* PERFORMANCE: backdrop-blur only on desktop */}
                 <div
-                    className="relative bg-zinc-900/30 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-2xl"
+                    className="relative bg-zinc-900/90 md:bg-zinc-900/30 md:backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-2xl"
                     style={{
                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05)',
                     }}

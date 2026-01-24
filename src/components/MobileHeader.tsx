@@ -16,7 +16,7 @@ interface MobileHeaderProps {
 
 export function MobileHeader({ onMenuClick, onNewChat }: MobileHeaderProps) {
     return (
-        <header className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-black/80 backdrop-blur-md border-b border-zinc-900 flex items-center justify-between px-4">
+        <header className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-black/95 border-b border-zinc-900 flex items-center justify-between px-4">
             {/* Esquerda: Botão Hambúrguer */}
             <button
                 onClick={onMenuClick}
