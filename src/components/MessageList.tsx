@@ -56,6 +56,7 @@ interface MessageListProps {
     isAnalyzingImage?: boolean;
     isReconnecting?: boolean;
     reconnectAttempt?: number;
+    isPremium?: boolean;
 }
 
 export function MessageList({
@@ -64,6 +65,7 @@ export function MessageList({
     isAnalyzingImage = false,
     isReconnecting = false,
     reconnectAttempt = 0,
+    isPremium = false,
 }: MessageListProps) {
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -82,18 +84,46 @@ export function MessageList({
 
     if (uniqueMessages.length === 0 && !isStreaming && !isAnalyzingImage) {
         return (
-            <div className="flex-1 flex items-center justify-center text-dark-text-muted">
+            <div className="flex-1 flex items-center justify-center">
                 <div className="text-center max-w-md px-6">
-                    <div className="w-32 h-32 mx-auto mb-4">
+                    {/* Logo */}
+                    <div className="w-32 h-32 mx-auto mb-6">
                         <MatrixLogo className="w-32 h-32" />
                     </div>
-                    <h2 className="text-xl font-semibold text-dark-text-primary mb-2">
-                        Bem-vindo ao 3Vírgulas Chat
-                    </h2>
-                    <p className="text-sm">
-                        Um assistente de IA sem censura. Faça qualquer pergunta e receba
-                        respostas honestas e diretas.
-                    </p>
+
+                    {isPremium ? (
+                        /* =====================================================
+                         * CENÁRIO B: Usuário PROMETHEUS (Assinante)
+                         * Título degradê metálico + Subtítulo técnico
+                         * ===================================================== */
+                        <>
+                            {/* Título PROMETHEUS com degradê metálico */}
+                            <h2 className="text-3xl font-bold uppercase tracking-widest mb-3 bg-gradient-to-b from-white via-zinc-200 to-zinc-500 text-transparent bg-clip-text">
+                                PROMETHEUS
+                            </h2>
+
+                            {/* Subtítulo técnico monoespaçado */}
+                            <p className="text-xs font-mono text-zinc-500 tracking-wide">
+                                MODO DEUS ATIVO • SUPERINTELIGÊNCIA 405B
+                            </p>
+                        </>
+                    ) : (
+                        /* =====================================================
+                         * CENÁRIO A: Usuário FREE
+                         * Estilo simples e limpo
+                         * ===================================================== */
+                        <>
+                            {/* Título padrão */}
+                            <h2 className="text-xl font-bold text-white mb-2">
+                                3Vírgulas Chat
+                            </h2>
+
+                            {/* Subtítulo */}
+                            <p className="text-sm text-zinc-500">
+                                Inteligência Sem Censura. Pergunte sem medo.
+                            </p>
+                        </>
+                    )}
                 </div>
             </div>
         );

@@ -316,6 +316,7 @@ export function ChatPage() {
                     isAnalyzingImage={isAnalyzing || isAnalyzingImage}
                     isReconnecting={isReconnecting}
                     reconnectAttempt={reconnectAttempt}
+                    isPremium={isPremium}
                 />
 
                 {/* ChatInput com padding extra para safe area no mobile */}
