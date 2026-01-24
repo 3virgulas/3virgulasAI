@@ -189,7 +189,8 @@ export function PremiumPaymentModal({
 
     return (
         <>
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Modal Container - TRANSLATION PROTECTION */}
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 notranslate" translate="no">
                 {/* Backdrop */}
                 {/* PERFORMANCE: Fundo sólido sem blur */}
                 <div

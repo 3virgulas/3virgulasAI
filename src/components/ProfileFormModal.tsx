@@ -2,6 +2,7 @@
 // PhoneFormModal - Modal para adicionar telefone
 // =====================================================
 // Solicita apenas o número de telefone antes de gerar PIX
+// TRANSLATION PROTECTION: translate="no" to prevent React portal breaks
 // =====================================================
 
 import { useState } from 'react';
@@ -69,7 +70,10 @@ export function PhoneFormModal({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 notranslate"
+            translate="no"
+        >
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/80 backdrop-blur-sm"

@@ -275,8 +275,12 @@ export function PrometheusModal({
 
     return (
         <>
-            {/* Fullscreen Overlay */}
-            <div className="fixed inset-0 z-50 bg-black overflow-y-auto md:overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+            {/* Fullscreen Overlay - TRANSLATION PROTECTION */}
+            <div
+                className="fixed inset-0 z-50 bg-black overflow-y-auto md:overflow-y-auto notranslate"
+                translate="no"
+                style={{ WebkitOverflowScrolling: 'touch' }}
+            >
                 {/* Subtle Spotlight Effect - DESKTOP */}
                 <div
                     className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] pointer-events-none hidden md:block"
