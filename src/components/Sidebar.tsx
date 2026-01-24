@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, MessageSquare, Trash2, LogOut, Loader2, X, User } from 'lucide-react';
 import { Chat } from '../types/chat';
 import { PrometheusCard } from './PremiumCard';
+import { InstallAppButton } from './InstallAppButton';
 
 interface SidebarProps {
     chats: Chat[];
@@ -156,6 +157,12 @@ export function Sidebar({
 
                 {/* Footer */}
                 <div className="p-3 border-t border-zinc-800/50">
+                    {/* Install App Button - PWA */}
+                    <InstallAppButton />
+
+                    {/* Divider */}
+                    <div className="my-2 border-t border-zinc-900" />
+
                     <button
                         onClick={() => navigate('/profile')}
                         className="flex items-center gap-2 w-full p-2.5 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900 rounded-lg transition-all text-sm"

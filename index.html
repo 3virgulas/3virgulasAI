@@ -1,26 +1,60 @@
 <!doctype html>
 <html lang="pt-BR" class="dark" translate="no">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>3Vírgulas Chat - Uncensored AI</title>
-    
-    <!-- ================================================
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <title>3Vírgulas Prometheus - IA Sem Censura</title>
+
+  <!-- ================================================
          DISABLE BROWSER TRANSLATION
-         Prevents Google Translate and other browser 
-         translation features from breaking React portals
          ================================================ -->
-    <meta name="google" content="notranslate" />
-    <meta http-equiv="Content-Language" content="pt-BR" />
-    
-    <!-- Google Fonts - Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  </head>
-  <body class="notranslate">
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+  <meta name="google" content="notranslate" />
+  <meta http-equiv="Content-Language" content="pt-BR" />
+
+  <!-- ================================================
+         PWA Meta Tags
+         ================================================ -->
+  <meta name="application-name" content="Prometheus" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Prometheus" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="msapplication-TileColor" content="#000000" />
+  <meta name="description" content="IA Sem Censura. Superinteligência 405B. Onde a verdade não tem filtros." />
+
+  <!-- Favicon & Icons -->
+  <link rel="icon" type="image/png" href="/pwa-192x192.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="mask-icon" href="/masked-icon.svg" color="#000000" />
+
+  <!-- Google Fonts - Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- iOS Splash Screens - Optional but improves experience -->
+  <style>
+    /* Prevent pull-to-refresh on iOS PWA */
+    html,
+    body {
+      overscroll-behavior-y: contain;
+    }
+
+    /* iOS Safe Area */
+    body {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+    }
+  </style>
+</head>
+
+<body class="notranslate">
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>
