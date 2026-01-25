@@ -7,7 +7,7 @@
 // =====================================================
 
 import { useNavigate } from 'react-router-dom';
-import { Plus, MessageSquare, Trash2, LogOut, Loader2, X, User } from 'lucide-react';
+import { Plus, MessageSquare, Trash2, LogOut, Loader2, X, User, Lock } from 'lucide-react';
 import { Chat } from '../types/chat';
 import { PrometheusCard } from './PremiumCard';
 import { InstallAppButton } from './InstallAppButton';
@@ -22,6 +22,7 @@ interface SidebarProps {
     loading?: boolean;
     // Premium props
     isPremium?: boolean;
+    isGuest?: boolean;
     onUpgrade?: () => void;
     // Mobile drawer props
     isOpen?: boolean;
@@ -37,6 +38,7 @@ export function Sidebar({
     onLogout,
     loading,
     isPremium = false,
+    isGuest = false,
     onUpgrade,
     isOpen = true,
     onClose,
@@ -101,8 +103,8 @@ export function Sidebar({
                         </button>
                     </div>
 
-                    {/* Prometheus Card - TOP POSITION (apenas para não-assinantes) */}
-                    {!isPremium && onUpgrade && (
+                    {/* Prometheus Card - TOP POSITION (apenas para não-assinantes e não-visitantes) */}
+                    {!isPremium && !isGuest && onUpgrade && (
                         <PrometheusCard onUpgrade={onUpgrade} />
                     )}
 
@@ -123,7 +125,14 @@ export function Sidebar({
 
                 {/* Chat List */}
                 <div className="flex-1 overflow-y-auto px-2 py-2 space-y-0.5">
-                    {loading ? (
+                    {isGuest ? (
+                        <div className="flex flex-col items-center justify-center h-full p-4 text-center space-y-4 opacity-50">
+                            <Lock className="w-8 h-8 text-zinc-600" />
+                            <p className="text-zinc-500 text-sm">
+                                Histórico disponível apenas para membros.
+                            </p>
+                        </div>
+                    ) : loading ? (
                         <div className="flex justify-center p-4">
                             <Loader2 className="w-5 h-5 animate-spin text-zinc-500" />
                         </div>
@@ -163,20 +172,39 @@ export function Sidebar({
                     {/* Divider */}
                     <div className="my-2 border-t border-zinc-900" />
 
-                    <button
-                        onClick={() => navigate('/profile')}
-                        className="flex items-center gap-2 w-full p-2.5 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900 rounded-lg transition-all text-sm"
-                    >
-                        <User className="w-4 h-4" />
-                        Meu Perfil
-                    </button>
-                    <button
-                        onClick={onLogout}
-                        className="flex items-center gap-2 w-full p-2.5 text-zinc-500 hover:text-red-400 hover:bg-zinc-900 rounded-lg transition-all text-sm"
-                    >
-                        <LogOut className="w-4 h-4" />
-                        Sair
-                    </button>
+                    {isGuest ? (
+                        <div className="mb-4 p-4 rounded-xl bg-gradient-to-br from-zinc-900 to-black border border-white/10 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full blur-[30px] -mr-8 -mt-8 pointer-events-none" />
+
+                            <h4 className="flex items-center gap-2 text-white font-bold mb-2 relative z-10">
+                                Libere o Poder
+                            </h4>
+
+                            <button
+                                onClick={() => navigate('/auth')}
+                                className="w-full py-2 px-3 bg-transparent border border-white/20 hover:bg-white hover:text-black hover:border-white text-white text-xs font-bold rounded-lg transition-all relative z-10"
+                            >
+                                Fazer Login
+                            </button>
+                        </div>
+                    ) : (
+                        <>
+                            <button
+                                onClick={() => navigate('/profile')}
+                                className="flex items-center gap-2 w-full p-2.5 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900 rounded-lg transition-all text-sm"
+                            >
+                                <User className="w-4 h-4" />
+                                Meu Perfil
+                            </button>
+                            <button
+                                onClick={onLogout}
+                                className="flex items-center gap-2 w-full p-2.5 text-zinc-500 hover:text-red-400 hover:bg-zinc-900 rounded-lg transition-all text-sm"
+                            >
+                                <LogOut className="w-4 h-4" />
+                                Sair
+                            </button>
+                        </>
+                    )}
                     <div className="mt-3 text-center">
                         <p className="text-[9px] text-zinc-600 uppercase tracking-[0.15em] font-mono">
                             3Vírgulas • Prometheus

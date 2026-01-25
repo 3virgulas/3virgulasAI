@@ -1,10 +1,16 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { Auth } from './components/Auth';
 import { ProfilePage } from './pages/ProfilePage';
 import { ChatPage } from './pages/ChatPage';
 import { AdminPage } from './pages/AdminPage';
+
+// =====================================================
+// AppContent
+// =====================================================
+// Lógica de roteamento condicional baseada na auth
+// =====================================================
 
 // =====================================================
 // AppContent
@@ -23,15 +29,20 @@ function AppContent() {
         );
     }
 
-    if (!user) {
-        return <Auth />;
-    }
-
     return (
         <Routes>
+            {/* Rota Pública (Guest Mode) */}
             <Route path="/" element={<ChatPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/admin" element={<AdminPage />} />
+
+            {/* Rota de Autenticação */}
+            <Route path="/auth" element={!user ? <Auth /> : <Navigate to="/" />} />
+
+            {/* Rotas Protegidas */}
+            <Route path="/profile" element={user ? <ProfilePage /> : <Navigate to="/auth" />} />
+            <Route path="/admin" element={user ? <AdminPage /> : <Navigate to="/auth" />} />
+
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" />} />
         </Routes>
     );
 }

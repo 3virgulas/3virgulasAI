@@ -20,6 +20,7 @@ import { MobileHeader } from '../components/MobileHeader';
 import { MessageList } from '../components/MessageList';
 import { ChatInput } from '../components/ChatInput';
 import { PrometheusModal } from '../components/PrometheusModal';
+import { GuestAuthModal } from '../components/GuestAuthModal';
 import { Settings } from 'lucide-react';
 
 const ADMIN_EMAIL = 'contato@3virgulas.com';
@@ -38,9 +39,11 @@ export function ChatPage() {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [showPrometheusModal, setShowPrometheusModal] = useState(false);
+    const [showGuestModal, setShowGuestModal] = useState(false);
 
     const streamingContentRef = useRef('');
     const activeChatIdRef = useRef<string | undefined>(currentChatId);
+    const hasSentPendingRef = useRef(false);
 
     const {
         chats,
@@ -65,11 +68,14 @@ export function ChatPage() {
     const { getSettings, getPremiumSettings, refreshSettings } = useAppSettings();
 
     // Hook de assinatura Premium
-    const { isPremium } = useSubscription(user?.id);
+    // Hook de assinatura Premium
+    const { isPremium, loading: isLoadingSubscription } = useSubscription(user?.id);
 
     useEffect(() => {
         activeChatIdRef.current = currentChatId;
     }, [currentChatId]);
+
+
 
     const {
         sendMessage,
@@ -136,6 +142,19 @@ export function ChatPage() {
     // =====================================================
     const handleSendMessage = useCallback(
         async (content: string, imageBase64?: string, parsedFile?: import('../lib/fileParser').ParsedFile) => {
+            // INTERCEPTOR: Se não estiver logado, salvar mensagem e pedir login
+            if (!user) {
+                // Salvar mensagem pendente
+                const pendingData = {
+                    content,
+                    imageBase64,
+                    parsedFile
+                };
+                sessionStorage.setItem('pending_message', JSON.stringify(pendingData));
+                setShowGuestModal(true);
+                return;
+            }
+
             await refreshSettings();
 
             // Usar configurações Premium se for assinante ativo
@@ -267,6 +286,35 @@ export function ChatPage() {
         setIsAnalyzing(false);
     }, [abortStream, cancelStreaming]);
 
+    // =====================================================
+    // AUTO-SEND: Verificar mensagem pendente após login
+    // =====================================================
+    useEffect(() => {
+        const pendingMsg = sessionStorage.getItem('pending_message');
+
+        // O Portão de Segurança:
+        // Só entra se o usuário existe, se tem mensagem E (CRUCIAL) se a assinatura JÁ CARREGOU (!loading).
+        if (user && pendingMsg && !hasSentPendingRef.current && !isLoadingSubscription) {
+            try {
+                // 1. TRAVA IMEDIATAMENTE para evitar disparos duplos
+                hasSentPendingRef.current = true;
+
+                // 2. Limpa o storage AGORA (antes mesmo de enviar)
+                sessionStorage.removeItem('pending_message');
+
+                // 3. Recupera dados e envia
+                const { content, imageBase64, parsedFile } = JSON.parse(pendingMsg);
+
+                // Pequeno delay para garantir que tudo carregou
+                setTimeout(() => {
+                    handleSendMessage(content, imageBase64, parsedFile);
+                }, 500);
+            } catch (e) {
+                console.error('Erro ao recuperar mensagem pendente', e);
+            }
+        }
+    }, [user, handleSendMessage, isLoadingSubscription]);
+
     // Combinar estados de loading
     const isProcessing = isStreaming || messagesStreaming || isAnalyzing || isAnalyzingImage;
 
@@ -292,6 +340,7 @@ export function ChatPage() {
                 onLogout={signOut}
                 loading={chatsLoading}
                 isPremium={isPremium}
+                isGuest={!user}
                 onUpgrade={() => setShowPrometheusModal(true)}
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
@@ -343,6 +392,12 @@ export function ChatPage() {
                     }}
                 />
             )}
+
+            {/* Modal Guest Auth */}
+            <GuestAuthModal
+                isOpen={showGuestModal}
+                onClose={() => setShowGuestModal(false)}
+            />
         </div>
     );
 }
