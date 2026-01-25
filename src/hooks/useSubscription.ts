@@ -45,9 +45,9 @@ export function useSubscription(userId?: string): UseSubscriptionReturn {
     })();
 
     // Verificar se é Premium ativo (status active E data válida)
-    const isPremium = subscription?.status === 'active' &&
-        daysRemaining !== null &&
-        daysRemaining >= 0;
+    const isPremium = Boolean(subscription?.status === 'active' &&
+        subscription?.subscription_expires_at &&
+        new Date(subscription.subscription_expires_at) > new Date());
 
     // =====================================================
     // Carregar assinatura

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
     User, Mail, Phone, Shield, CreditCard,
     LogOut, ChevronLeft, Loader2, Sparkles, CheckCircle2,
-    Clock
+    Clock, AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../hooks/useSubscription';
@@ -106,7 +106,6 @@ export function ProfilePage() {
                     </div>
                 </div>
 
-                {/* Subscription Status */}
                 <div className="space-y-4">
                     <h3 className="text-lg font-bold text-dark-text-primary flex items-center gap-2">
                         <CreditCard className="w-5 h-5 text-matrix-primary" />
@@ -140,6 +139,32 @@ export function ProfilePage() {
                                     </div>
                                 </div>
                                 <CheckCircle2 className="w-12 h-12 text-emerald-500/20" />
+                            </div>
+                        </div>
+                    ) : (daysRemaining !== null && daysRemaining <= 0) ? (
+                        <div className="bg-[#111] border border-red-500/50 rounded-2xl p-6 relative overflow-hidden" style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 80px -20px rgba(239, 68, 68, 0.1)' }}>
+                            <div className="flex items-start justify-between relative z-10">
+                                <div className="space-y-4">
+                                    <div>
+                                        <p className="text-sm font-medium text-red-500/70 mb-1 flex items-center gap-2">
+                                            <AlertTriangle className="w-4 h-4" /> Expirado
+                                        </p>
+                                        <h4 className="text-2xl font-bold text-white">
+                                            Assinatura Vencida
+                                        </h4>
+                                    </div>
+
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            onClick={() => setIsPaymentOpen(true)}
+                                            className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg transition-colors flex items-center gap-2"
+                                        >
+                                            <Sparkles className="w-4 h-4" />
+                                            Renovar Agora
+                                        </button>
+                                    </div>
+                                </div>
+                                <AlertTriangle className="w-12 h-12 text-red-500/20" />
                             </div>
                         </div>
                     ) : (

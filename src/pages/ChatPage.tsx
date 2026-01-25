@@ -243,6 +243,7 @@ export function ChatPage() {
             refreshSettings,
             getSettings,
             refreshChats,
+            isPremium
         ]
     );
 
