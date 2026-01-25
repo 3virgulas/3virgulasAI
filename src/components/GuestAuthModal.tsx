@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Lock, MessageSquare } from 'lucide-react';
+import { ArrowRight, Lock } from 'lucide-react';
 import { MatrixLogo } from './MatrixLogo';
 
 interface GuestAuthModalProps {
