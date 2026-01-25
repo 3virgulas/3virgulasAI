@@ -7,7 +7,7 @@
 // =====================================================
 
 import { useNavigate } from 'react-router-dom';
-import { Plus, MessageSquare, Trash2, LogOut, Loader2, X, User, Lock } from 'lucide-react';
+import { Plus, MessageSquare, Trash2, LogOut, Loader2, X, User, Lock, Instagram } from 'lucide-react';
 import { Chat } from '../types/chat';
 import { PrometheusCard } from './PremiumCard';
 import { InstallAppButton } from './InstallAppButton';
@@ -166,6 +166,19 @@ export function Sidebar({
 
                 {/* Footer */}
                 <div className="p-3 border-t border-zinc-800/50">
+                    {/* Instagram Link - Logged Users Only */}
+                    {!isGuest && (
+                        <a
+                            href="https://www.instagram.com/3virgulas"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 px-3 py-2 w-full text-sm font-medium text-zinc-400 rounded-lg hover:bg-zinc-900 hover:text-white transition-all group mb-1"
+                        >
+                            <Instagram className="w-4 h-4 group-hover:text-[#E1306C] transition-colors" />
+                            Siga no Instagram
+                        </a>
+                    )}
+
                     {/* Install App Button - PWA */}
                     <InstallAppButton />
 
