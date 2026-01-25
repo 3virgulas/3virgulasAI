@@ -129,7 +129,7 @@ export function Sidebar({
                         <div className="flex flex-col items-center justify-center h-full p-4 text-center space-y-4 opacity-50">
                             <Lock className="w-8 h-8 text-zinc-600" />
                             <p className="text-zinc-500 text-sm">
-                                Histórico disponível apenas para membros.
+                                Faça login para acessar o histórico
                             </p>
                         </div>
                     ) : loading ? (
