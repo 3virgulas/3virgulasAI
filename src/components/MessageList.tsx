@@ -57,7 +57,7 @@ interface MessageListProps {
     isAnalyzingImage?: boolean;
     isReconnecting?: boolean;
     reconnectAttempt?: number;
-    reconnectAttempt?: number;
+
     isPremium?: boolean;
     isDeepResearching?: boolean;
 }

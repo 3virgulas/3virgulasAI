@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Square, X, Paperclip, Globe, ArrowUp, Loader2, FileText } from 'lucide-react';
-import { parseFile, formatFileSize, isSupportedFileType, type ParsedFile } from '../lib/fileParser';
+import { parseFile, isSupportedFileType, type ParsedFile } from '../lib/fileParser';
 
 interface ChatInputProps {
     onSendMessage: (content: string, imageBase64?: string, parsedFile?: ParsedFile) => void;

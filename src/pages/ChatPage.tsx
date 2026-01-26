@@ -416,7 +416,7 @@ export function ChatPage() {
                     isAnalyzingImage={isAnalyzing || isAnalyzingImage}
                     isReconnecting={isReconnecting}
                     reconnectAttempt={reconnectAttempt}
-                    reconnectAttempt={reconnectAttempt}
+
                     isPremium={isPremium}
                     isDeepResearching={isSearchingWeb}
                 />
