@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { SendHorizontal, Square, X, FileText, Loader2, Plus, Image, FolderOpen, Globe } from 'lucide-react';
+import { Square, X, Paperclip, Globe, ArrowUp, Loader2, FileText } from 'lucide-react';
 import { parseFile, formatFileSize, isSupportedFileType, type ParsedFile } from '../lib/fileParser';
 
 interface ChatInputProps {
@@ -27,14 +27,12 @@ export function ChatInput({
     const [documentFile, setDocumentFile] = useState<ParsedFile | null>(null);
     const [isProcessingFile, setIsProcessingFile] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
-    const [isUploadMenuOpen, setIsUploadMenuOpen] = useState(false);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const mediaInputRef = useRef<HTMLInputElement>(null);
-    const documentInputRef = useRef<HTMLInputElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const dropZoneRef = useRef<HTMLDivElement>(null);
-    const menuRef = useRef<HTMLDivElement>(null);
 
+    // Auto-resize textarea
     useEffect(() => {
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
@@ -45,33 +43,14 @@ export function ChatInput({
         }
     }, [content]);
 
-    // Close menu when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-                setIsUploadMenuOpen(false);
-            }
-        };
-
-        if (isUploadMenuOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [isUploadMenuOpen]);
-
     // =====================================================
-    // File Processing (Unified for Images and Documents)
+    // File Processing
     // =====================================================
     const processFile = async (file: File) => {
         setIsProcessingFile(true);
 
         try {
-            // Detectar se é imagem ou documento
             if (file.type.startsWith('image/')) {
-                // Processar como imagem (comportamento original)
                 if (file.size > 10 * 1024 * 1024) {
                     alert('Imagem muito grande. Máximo 10MB.');
                     return;
@@ -85,7 +64,6 @@ export function ChatInput({
                 };
                 reader.readAsDataURL(file);
             } else if (isSupportedFileType(file)) {
-                // Processar como documento
                 const parsed = await parseFile(file);
                 setDocumentFile(parsed);
 
@@ -99,21 +77,25 @@ export function ChatInput({
             alert('Erro ao processar arquivo: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
         } finally {
             setIsProcessingFile(false);
+            // Reset input value to allow selecting the same file again
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
         }
     };
 
     const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-
         await processFile(file);
+    };
 
-        // Limpar input para permitir selecionar mesma imagem
-        e.target.value = '';
+    const handleFileClick = () => {
+        fileInputRef.current?.click();
     };
 
     // =====================================================
-    // Drag and Drop Handlers
+    // Drag and Drop
     // =====================================================
     const handleDragEnter = (e: React.DragEvent) => {
         e.preventDefault();
@@ -124,8 +106,6 @@ export function ChatInput({
     const handleDragLeave = (e: React.DragEvent) => {
         e.preventDefault();
         e.stopPropagation();
-
-        // Só remove o highlight se realmente saiu da área
         if (e.currentTarget === dropZoneRef.current) {
             setIsDragging(false);
         }
@@ -148,13 +128,12 @@ export function ChatInput({
     };
 
     // =====================================================
-    // Paste Handler (Ctrl+V)
+    // Paste
     // =====================================================
     const handlePaste = async (e: React.ClipboardEvent) => {
         const items = e.clipboardData?.items;
         if (!items) return;
 
-        // Procurar por arquivo nos itens colados
         for (let i = 0; i < items.length; i++) {
             const item = items[i];
             if (item.kind === 'file') {
@@ -189,7 +168,7 @@ export function ChatInput({
         removeAttachment();
 
         if (textareaRef.current) {
-            textareaRef.current.style.height = 'auto';
+            textareaRef.current.style.height = 'auto'; // Reset height
         }
     };
 
@@ -203,191 +182,71 @@ export function ChatInput({
     const canSend = content.trim() || imageBase64 || documentFile;
 
     return (
-        <div
-            ref={dropZoneRef}
-            onDragEnter={handleDragEnter}
-            onDragLeave={handleDragLeave}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            className={`p-4 bg-dark-bg border-t transition-all ${isDragging
-                ? 'border-matrix-primary border-t-2 bg-matrix-primary/5'
-                : 'border-dark-border'
-                }`}
-        >
-            <div className="max-w-4xl mx-auto relative">
-                {/* Drag Overlay - Full Area */}
+        <div className="fixed bottom-0 right-0 z-40 left-0 md:left-64 p-4 md:pb-6 bg-gradient-to-t from-dark-bg via-dark-bg/95 to-transparent transition-all duration-300">
+            <div className="relative w-full max-w-4xl mx-auto">
+
+                {/* Drag Overlay */}
                 {isDragging && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-matrix-primary/20 rounded-xl pointer-events-none z-50 border-2 border-dashed border-matrix-primary">
-                        <div className="flex flex-col items-center gap-3 bg-dark-surface/90 px-8 py-6 rounded-lg">
-                            <Plus className="w-12 h-12 text-matrix-primary" />
-                            <span className="text-lg font-medium text-matrix-primary">
-                                Solte a imagem aqui
-                            </span>
-                            <span className="text-xs text-dark-text-muted">
-                                Arraste e solte para anexar
+                    <div className="absolute -top-12 inset-x-0 h-[300px] flex items-center justify-center bg-matrix-primary/20 rounded-2xl pointer-events-none z-50 border-2 border-dashed border-matrix-primary backdrop-blur-sm animate-in fade-in zoom-in">
+                        <div className="flex flex-col items-center gap-3 bg-black/90 px-8 py-6 rounded-xl border border-matrix-primary">
+                            <ArrowUp className="w-10 h-10 text-matrix-primary animate-bounce" />
+                            <span className="text-lg font-bold text-matrix-primary tracking-wider">
+                                SOLTE O ARQUIVO
                             </span>
                         </div>
                     </div>
                 )}
 
-                {/* Image Preview */}
-                {imagePreview && (
-                    <div className="mb-3 flex items-start gap-2">
-                        <div className="relative group">
-                            <img
-                                src={imagePreview}
-                                alt="Preview"
-                                className="h-20 w-auto rounded-lg border border-dark-border object-cover"
-                            />
-                            <button
-                                onClick={removeAttachment}
-                                className="absolute -top-2 -right-2 p-1 bg-dark-surface border border-dark-border rounded-full text-dark-text-muted hover:text-red-400 hover:border-red-400 transition-colors"
-                            >
-                                <X className="w-3 h-3" />
-                            </button>
-                        </div>
-                        <span className="text-xs text-matrix-primary font-mono mt-1">
-                            📷 Imagem anexada
-                        </span>
-                    </div>
-                )}
-
-                {/* Document Preview */}
-                {documentFile && (
-                    <div className="mb-3 p-3 bg-dark-surface border border-dark-border rounded-lg flex items-start gap-3">
-                        <div className="flex-shrink-0 p-2 bg-matrix-primary/10 rounded-lg">
-                            <FileText className="w-5 h-5 text-matrix-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-dark-text-primary truncate">
-                                        {documentFile.fileName}
-                                    </p>
-                                    <p className="text-xs text-dark-text-muted mt-0.5">
-                                        {formatFileSize(documentFile.fileSize)}
-                                        {documentFile.pageCount && ` • ${documentFile.pageCount} páginas`}
-                                    </p>
-                                    {documentFile.error && (
-                                        <p className="text-xs text-yellow-400 mt-1">
-                                            ⚠️ {documentFile.error}
-                                        </p>
-                                    )}
-                                </div>
-                                <button
-                                    onClick={removeAttachment}
-                                    className="flex-shrink-0 p-1 text-dark-text-muted hover:text-red-400 transition-colors"
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
-                            </div>
-                            <p className="text-xs text-matrix-primary font-mono mt-2">
-                                📄 Documento processado ({documentFile.textContent.length} caracteres)
-                            </p>
-                        </div>
-                    </div>
-                )}
-
-                {/* Input Area */}
+                {/* Main Card Container */}
                 <div
-                    className={`relative flex items-center bg-dark-surface border rounded-lg transition-all ${isDragging
-                        ? 'border-matrix-primary'
-                        : 'border-dark-border focus-within:border-matrix-primary/50'
-                        }`}
+                    ref={dropZoneRef}
+                    onDragEnter={handleDragEnter}
+                    onDragLeave={handleDragLeave}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    className={`flex flex-col bg-zinc-900/80 backdrop-blur-md border border-zinc-800 hover:border-zinc-700 transition-all duration-300 rounded-2xl shadow-xl overflow-hidden
+                        ${isDragging ? 'border-matrix-primary ring-1 ring-matrix-primary' : ''}
+                        ${isWebSearchEnabled ? 'shadow-[0_0_20px_rgba(0,0,0,0.5)]' : ''}
+                    `}
                 >
-                    {/* Upload Menu Trigger (+) */}
-                    <div ref={menuRef} className="relative flex-shrink-0">
-                        <button
-                            type="button"
-                            onClick={() => setIsUploadMenuOpen(!isUploadMenuOpen)}
-                            disabled={disabled || isProcessingFile}
-                            className={`p-3 transition-all disabled:opacity-50 ${isUploadMenuOpen
-                                ? 'text-matrix-primary'
-                                : 'text-dark-text-muted hover:text-matrix-primary'
-                                }`}
-                            title="Anexar arquivo"
-                        >
-                            {isProcessingFile ? (
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                            ) : (
-                                <Plus className={`w-5 h-5 transition-transform duration-200 ${isUploadMenuOpen ? 'rotate-45' : ''
-                                    }`} />
+                    {/* Previews Area (if attachments exist) */}
+                    {(imagePreview || documentFile) && (
+                        <div className="px-4 pt-4 pb-0">
+                            {imagePreview && (
+                                <div className="relative inline-block group">
+                                    <img
+                                        src={imagePreview}
+                                        alt="Preview"
+                                        className="h-16 w-auto rounded-lg border border-white/10 object-cover"
+                                    />
+                                    <button
+                                        onClick={removeAttachment}
+                                        className="absolute -top-2 -right-2 p-1 bg-zinc-800 border border-zinc-700 rounded-full text-zinc-400 hover:text-red-400 hover:border-red-400 transition-colors shadow-lg"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                </div>
                             )}
-                        </button>
+                            {documentFile && (
+                                <div className="relative inline-flex items-center gap-3 p-2 bg-white/5 border border-white/10 rounded-lg max-w-[250px]">
+                                    <div className="p-1.5 bg-matrix-primary/20 rounded">
+                                        <FileText className="w-4 h-4 text-matrix-primary" />
+                                    </div>
+                                    <span className="text-xs text-zinc-300 truncate font-mono">
+                                        {documentFile.fileName}
+                                    </span>
+                                    <button
+                                        onClick={removeAttachment}
+                                        className="p-1 text-zinc-500 hover:text-red-400 transition-colors"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
-                        {/* Upload Menu Popover */}
-                        {isUploadMenuOpen && (
-                            <div className="absolute bottom-full left-0 mb-2 w-48 bg-dark-bg border border-matrix-primary rounded-lg shadow-[0_0_15px_#00FF4130] overflow-hidden z-50">
-                                {/* Media Option */}
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        mediaInputRef.current?.click();
-                                        setIsUploadMenuOpen(false);
-                                    }}
-                                    className="w-full flex items-center gap-3 px-4 py-3 text-dark-text-primary hover:bg-matrix-primary/10 hover:text-matrix-primary transition-colors"
-                                >
-                                    <Image className="w-4 h-4" />
-                                    <span className="text-sm">Mídia (Foto/Vídeo)</span>
-                                </button>
-
-                                {/* Separator */}
-                                <div className="border-t border-dark-border" />
-
-                                {/* Document Option */}
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        documentInputRef.current?.click();
-                                        setIsUploadMenuOpen(false);
-                                    }}
-                                    className="w-full flex items-center gap-3 px-4 py-3 text-dark-text-primary hover:bg-matrix-primary/10 hover:text-matrix-primary transition-colors"
-                                >
-                                    <FolderOpen className="w-4 h-4" />
-                                    <span className="text-sm">Documento/Arquivo</span>
-                                </button>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Hidden File Inputs */}
-                    <input
-                        ref={mediaInputRef}
-                        type="file"
-                        accept="image/*,video/*"
-                        onChange={handleFileSelect}
-                        className="hidden"
-                    />
-                    <input
-                        ref={documentInputRef}
-                        type="file"
-                        accept=".pdf,.docx,.txt,.md,.csv,.json"
-                        onChange={handleFileSelect}
-                        className="hidden"
-                    />
-
-                    {/* Deep Research Toggle */}
-                    <div className="absolute left-14 flex-shrink-0">
-                        <button
-                            type="button"
-                            onClick={onToggleWebSearch}
-                            disabled={disabled || isStreaming}
-                            className={`p-3 transition-all group relative ${isWebSearchEnabled
-                                    ? 'text-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)]'
-                                    : 'text-dark-text-muted hover:text-green-400'
-                                }`}
-                            title="Deep Research (Apenas Prometheus)"
-                        >
-                            <Globe className={`w-5 h-5 ${isWebSearchEnabled ? 'animate-pulse' : ''}`} />
-
-                            {/* Tooltip on Hover */}
-                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] uppercase font-bold tracking-wider bg-black/90 text-white rounded border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
-                                Deep Research
-                            </span>
-                        </button>
-                    </div>
-
-                    {/* Text Input with Paste Support */}
+                    {/* TextArea */}
                     <textarea
                         ref={textareaRef}
                         value={content}
@@ -395,39 +254,83 @@ export function ChatInput({
                         onKeyDown={handleKeyDown}
                         onPaste={handlePaste}
                         placeholder={
-                            imageBase64 || documentFile
-                                ? "Pergunte sobre o arquivo..."
-                                : isWebSearchEnabled
-                                    ? "Deep Research Ativo: O que deseja investigar?"
-                                    : "Digite, cole ou arraste um arquivo..."
+                            isWebSearchEnabled
+                                ? "Deep Research Ativo: O que deseja investigar na web?"
+                                : "Envie uma mensagem para o Prometheus..."
                         }
-                        disabled={disabled}
                         rows={1}
-                        className="w-full bg-transparent border-0 focus:ring-0 focus:outline-none resize-none py-4 pl-12 pr-14 max-h-[200px] text-dark-text-primary placeholder-dark-text-muted disabled:opacity-50"
-                        style={{ minHeight: '56px' }}
+                        disabled={disabled}
+                        className="w-full bg-transparent border-none focus:ring-0 text-white placeholder-zinc-500 min-h-[50px] max-h-[200px] resize-none px-4 py-3 scrollbar-hide text-[15px] sm:text-base leading-relaxed"
                     />
 
-                    {/* Send Button */}
-                    <div className="absolute right-2 bottom-2">
+                    {/* Toolbar (Bottom Bar) */}
+                    <div className="flex justify-between items-center px-2 pb-2 pt-0">
+                        {/* Left Tools */}
+                        <div className="flex items-center gap-1">
+                            {/* Attachment Button */}
+                            <button
+                                onClick={handleFileClick}
+                                disabled={isProcessingFile || disabled}
+                                className="p-2 text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors group relative"
+                                title="Adicionar arquivo"
+                            >
+                                {isProcessingFile ? (
+                                    <Loader2 className="w-5 h-5 animate-spin text-matrix-primary" />
+                                ) : (
+                                    <Paperclip className="w-5 h-5" />
+                                )}
+                            </button>
+
+                            {/* Deep Research Button */}
+                            <button
+                                onClick={onToggleWebSearch}
+                                disabled={disabled || isStreaming}
+                                className={`p-2 rounded-lg transition-all flex items-center gap-2 
+                                    ${isWebSearchEnabled
+                                        ? 'text-green-500 bg-green-500/10 hover:bg-green-500/20'
+                                        : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                                    }`}
+                                title={isWebSearchEnabled ? "Desativar Deep Research" : "Ativar Deep Research (Apenas Prometheus)"}
+                            >
+                                <Globe className={`w-5 h-5 ${isWebSearchEnabled ? 'animate-pulse' : ''}`} />
+                                {isWebSearchEnabled && (
+                                    <span className="text-xs font-mono font-bold hidden md:inline text-green-500 animate-in fade-in slide-in-from-left-2">
+                                        WEB ON
+                                    </span>
+                                )}
+                            </button>
+                        </div>
+
+                        {/* Right Actions */}
                         <button
                             onClick={handleSubmit}
                             disabled={(!canSend && !isStreaming) || (disabled && !isStreaming)}
-                            className={`p-2.5 rounded-lg transition-all ${isStreaming
-                                ? 'bg-red-500/20 text-red-400 border border-red-500/50 hover:bg-red-500/30'
-                                : canSend
-                                    ? 'bg-matrix-primary/20 text-matrix-primary border border-matrix-primary/50 hover:bg-matrix-primary/30'
-                                    : 'bg-dark-hover text-dark-text-muted cursor-not-allowed'
+                            className={`p-2 rounded-xl transition-all duration-200 flex items-center justify-center
+                                ${isStreaming
+                                    ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                                    : (canSend)
+                                        ? 'bg-white text-black hover:bg-zinc-200 shadow-[0_0_15px_rgba(255,255,255,0.1)]'
+                                        : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
                                 }`}
                         >
                             {isStreaming ? (
-                                <Square className="w-5 h-5 fill-current" />
+                                <Square className="w-5 h-5 fill-current scale-90" />
                             ) : (
-                                <SendHorizontal className="w-5 h-5" />
+                                <ArrowUp className={`w-5 h-5 ${canSend ? 'scale-110' : ''}`} />
                             )}
                         </button>
                     </div>
                 </div>
             </div>
+
+            {/* Hidden Input for Files (Universal) */}
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,video/*,.pdf,.docx,.txt,.md,.csv,.json"
+                onChange={handleFileSelect}
+                className="hidden"
+            />
         </div>
     );
 }
