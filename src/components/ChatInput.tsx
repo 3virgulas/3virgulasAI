@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { SendHorizontal, Square, X, FileText, Loader2, Plus, Image, FolderOpen } from 'lucide-react';
+import { SendHorizontal, Square, X, FileText, Loader2, Plus, Image, FolderOpen, Globe } from 'lucide-react';
 import { parseFile, formatFileSize, isSupportedFileType, type ParsedFile } from '../lib/fileParser';
 
 interface ChatInputProps {
@@ -7,6 +7,9 @@ interface ChatInputProps {
     onStop: () => void;
     isStreaming: boolean;
     disabled: boolean;
+    // Deep Research Props
+    isWebSearchEnabled?: boolean;
+    onToggleWebSearch?: () => void;
 }
 
 export function ChatInput({
@@ -14,6 +17,9 @@ export function ChatInput({
     onStop,
     isStreaming,
     disabled,
+    // Deep Research Props
+    isWebSearchEnabled = false,
+    onToggleWebSearch,
 }: ChatInputProps) {
     const [content, setContent] = useState('');
     const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -360,6 +366,27 @@ export function ChatInput({
                         className="hidden"
                     />
 
+                    {/* Deep Research Toggle */}
+                    <div className="absolute left-14 flex-shrink-0">
+                        <button
+                            type="button"
+                            onClick={onToggleWebSearch}
+                            disabled={disabled || isStreaming}
+                            className={`p-3 transition-all group relative ${isWebSearchEnabled
+                                    ? 'text-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)]'
+                                    : 'text-dark-text-muted hover:text-green-400'
+                                }`}
+                            title="Deep Research (Apenas Prometheus)"
+                        >
+                            <Globe className={`w-5 h-5 ${isWebSearchEnabled ? 'animate-pulse' : ''}`} />
+
+                            {/* Tooltip on Hover */}
+                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] uppercase font-bold tracking-wider bg-black/90 text-white rounded border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+                                Deep Research
+                            </span>
+                        </button>
+                    </div>
+
                     {/* Text Input with Paste Support */}
                     <textarea
                         ref={textareaRef}
@@ -370,11 +397,13 @@ export function ChatInput({
                         placeholder={
                             imageBase64 || documentFile
                                 ? "Pergunte sobre o arquivo..."
-                                : "Digite, cole ou arraste um arquivo..."
+                                : isWebSearchEnabled
+                                    ? "Deep Research Ativo: O que deseja investigar?"
+                                    : "Digite, cole ou arraste um arquivo..."
                         }
                         disabled={disabled}
                         rows={1}
-                        className="w-full bg-transparent border-0 focus:ring-0 focus:outline-none resize-none py-4 pl-0 pr-14 max-h-[200px] text-dark-text-primary placeholder-dark-text-muted disabled:opacity-50"
+                        className="w-full bg-transparent border-0 focus:ring-0 focus:outline-none resize-none py-4 pl-12 pr-14 max-h-[200px] text-dark-text-primary placeholder-dark-text-muted disabled:opacity-50"
                         style={{ minHeight: '56px' }}
                     />
 

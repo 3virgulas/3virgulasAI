@@ -7,7 +7,7 @@
 // =====================================================
 
 import React, { useEffect, useRef, useMemo } from 'react';
-import { ScanEye, RefreshCw } from 'lucide-react';
+import { ScanEye, RefreshCw, Globe } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Message } from '../types/chat';
@@ -57,7 +57,9 @@ interface MessageListProps {
     isAnalyzingImage?: boolean;
     isReconnecting?: boolean;
     reconnectAttempt?: number;
+    reconnectAttempt?: number;
     isPremium?: boolean;
+    isDeepResearching?: boolean;
 }
 
 export function MessageList({
@@ -67,6 +69,7 @@ export function MessageList({
     isReconnecting = false,
     reconnectAttempt = 0,
     isPremium = false,
+    isDeepResearching = false,
 }: MessageListProps) {
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -139,6 +142,29 @@ export function MessageList({
                     isStreamingMessage={message.id.startsWith('streaming-')}
                 />
             ))}
+
+
+
+            {/* Deep Research Status */}
+            {isDeepResearching && !isAnalyzingImage && (
+                <div className="flex items-start gap-3 animate-in">
+                    <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 mt-1 bg-green-500/10 flex items-center justify-center">
+                        <div className="w-full h-full flex items-center justify-center bg-green-500/20 animate-pulse">
+                            <Globe className="w-5 h-5 text-green-500 animate-pulse" />
+                        </div>
+                    </div>
+                    <div className="py-1">
+                        <div className="flex items-center gap-2 font-mono text-sm text-green-500">
+                            <span className="animate-pulse">&gt;</span>
+                            <span className="animate-pulse">DEEP_RESEARCH_PROTOCOL</span>
+                            <span className="animate-pulse">...</span>
+                        </div>
+                        <p className="text-xs text-dark-text-muted mt-1 font-mono">
+                            Varrendo a Surface Web em tempo real...
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* Vision Proxy: Analyzing Image Status */}
             {isAnalyzingImage && (

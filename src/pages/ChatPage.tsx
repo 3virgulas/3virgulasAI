@@ -13,6 +13,7 @@ import { useOpenRouter } from '../hooks/useOpenRouter';
 import { useAppSettings } from '../hooks/useAppSettings';
 import { useSubscription } from '../hooks/useSubscription';
 import { generateChatTitle } from '../lib/openrouter';
+import { supabase } from '../lib/supabase';
 import { env } from '../config/env';
 import { useAuth } from '../contexts/AuthContext';
 import { Sidebar } from '../components/Sidebar';
@@ -40,6 +41,8 @@ export function ChatPage() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [showPrometheusModal, setShowPrometheusModal] = useState(false);
     const [showGuestModal, setShowGuestModal] = useState(false);
+    const [isWebSearchEnabled, setIsWebSearchEnabled] = useState(false);
+    const [isSearchingWeb, setIsSearchingWeb] = useState(false);
 
     const streamingContentRef = useRef('');
     const activeChatIdRef = useRef<string | undefined>(currentChatId);
@@ -138,7 +141,18 @@ export function ChatPage() {
     );
 
     // =====================================================
-    // handleSendMessage - Vision Proxy Integration
+    // handleToggleWebSearch - Ativa/Desativa Deep Research
+    // =====================================================
+    const handleToggleWebSearch = useCallback(() => {
+        if (!isPremium) {
+            setShowPrometheusModal(true);
+            return;
+        }
+        setIsWebSearchEnabled(prev => !prev);
+    }, [isPremium]);
+
+    // =====================================================
+    // handleSendMessage - Vision Proxy & Deep Research Integration
     // =====================================================
     const handleSendMessage = useCallback(
         async (content: string, imageBase64?: string, parsedFile?: import('../lib/fileParser').ParsedFile) => {
@@ -179,6 +193,36 @@ export function ChatPage() {
                 await refreshChats();
             }
 
+            // ===== DEEP RESEARCH FLOW =====
+            // ===== DEEP RESEARCH FLOW =====
+            let searchContext = '';
+            if (isWebSearchEnabled) {
+                try {
+                    setIsSearchingWeb(true);
+                    console.log('Modo Deep Research Ativo: Buscando dados...');
+
+                    const { data, error } = await supabase.functions.invoke('deep-research', {
+                        body: { query: content }
+                    });
+
+                    console.log("🔍 [DEBUG] Resposta Bruta da Tavily:", data);
+                    if (error) {
+                        console.error("❌ Erro na API:", error);
+                    }
+
+                    if (error) throw error;
+
+                    if (data && data.context) {
+                        searchContext = data.context;
+                    }
+                } catch (err) {
+                    console.error('Deep Search failed:', err);
+                    // Opcional: Mostrar toast de erro
+                } finally {
+                    setIsSearchingWeb(false);
+                }
+            }
+
             // ===== VISION PROXY FLOW (Images) =====
             // ===== DOCUMENT PROCESSING FLOW (PDF, DOCX, etc) =====
             let finalContent = content;
@@ -205,6 +249,11 @@ export function ChatPage() {
                 // Processar documento (PDF, DOCX, TXT, etc)
                 const { formatFileContentForAI } = await import('../lib/fileParser');
                 finalContent = formatFileContentForAI(parsedFile, content);
+            }
+
+            // Injetar contexto de pesquisa (Deep Research)
+            if (searchContext) {
+                finalContent += `\n\n${searchContext}`;
             }
 
             // Salvar mensagem do usuário (com ícone apropriado)
@@ -262,7 +311,8 @@ export function ChatPage() {
             refreshSettings,
             getSettings,
             refreshChats,
-            isPremium
+            isPremium,
+            isWebSearchEnabled,
         ]
     );
 
@@ -316,7 +366,7 @@ export function ChatPage() {
     }, [user, handleSendMessage, isLoadingSubscription]);
 
     // Combinar estados de loading
-    const isProcessing = isStreaming || messagesStreaming || isAnalyzing || isAnalyzingImage;
+    const isProcessing = isStreaming || messagesStreaming || isAnalyzing || isAnalyzingImage || isSearchingWeb;
 
     // Obter título do chat atual para o header mobile
     const currentChatTitle = chats.find((c) => c.id === currentChatId)?.title;
@@ -366,7 +416,9 @@ export function ChatPage() {
                     isAnalyzingImage={isAnalyzing || isAnalyzingImage}
                     isReconnecting={isReconnecting}
                     reconnectAttempt={reconnectAttempt}
+                    reconnectAttempt={reconnectAttempt}
                     isPremium={isPremium}
+                    isDeepResearching={isSearchingWeb}
                 />
 
                 {/* ChatInput com padding extra para safe area no mobile */}
@@ -376,6 +428,8 @@ export function ChatPage() {
                         onStop={handleStop}
                         isStreaming={isProcessing}
                         disabled={messagesLoading}
+                        isWebSearchEnabled={isWebSearchEnabled}
+                        onToggleWebSearch={handleToggleWebSearch}
                     />
                 </div>
             </div>
