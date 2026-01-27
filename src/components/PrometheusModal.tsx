@@ -19,7 +19,9 @@ import {
     ShieldOff,
     GraduationCap,
     ScanEye,
-    Flame
+    Flame,
+    Globe,
+    HelpCircle
 } from 'lucide-react';
 import { useSubscription } from '../hooks/useSubscription';
 import { PhoneFormModal } from './ProfileFormModal';
@@ -414,6 +416,46 @@ export function PrometheusModal({
                                         icon={Brain}
                                         text="Acesso ao Modelo 405B (Superinteligência)"
                                     />
+
+                                    {/* Item 2: Deep Research (Integrated Design) */}
+                                    <div className="flex items-center gap-3 group">
+                                        <div className="flex-shrink-0 w-6 h-6 md:w-7 md:h-7 rounded flex items-center justify-center bg-zinc-800/50 group-hover:bg-zinc-700/50 transition-colors">
+                                            <Globe className="w-3.5 h-3.5 md:w-4 md:h-4 text-emerald-500" />
+                                        </div>
+                                        <div className="flex flex-1 items-center gap-2">
+                                            <span className="text-sm text-zinc-300 group-hover:text-zinc-200 transition-colors">
+                                                Deep Research (Web)
+                                            </span>
+
+                                            {/* Tooltip container - Relative for positioning */}
+                                            <div className="relative group/tooltip">
+                                                <HelpCircle className="w-3.5 h-3.5 text-zinc-600 hover:text-zinc-400 cursor-help transition-colors" />
+
+                                                {/* Tooltip Popup */}
+                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 bg-zinc-950 border border-zinc-800 rounded-lg shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none transform origin-bottom hover:pointer-events-auto">
+                                                    <div className="p-3">
+                                                        <p className="text-xs text-zinc-300 leading-relaxed text-center font-normal mb-3">
+                                                            O Prometheus varre a internet em tempo real para encontrar notícias, dados financeiros e fatos recentes que outras IAs desconhecem.
+                                                        </p>
+
+                                                        <div className="flex items-center justify-center pt-2 border-t border-zinc-900">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="relative flex h-1.5 w-1.5">
+                                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                                                                </span>
+                                                                <span className="text-[10px] font-mono text-emerald-400/90 uppercase tracking-wider">
+                                                                    Limite: <span className="font-bold">300/Mês</span>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {/* Arrow */}
+                                                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-zinc-950" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <FeatureItem
                                         icon={ShieldOff}
                                         text="Sem Censura Moral ou Ética"
