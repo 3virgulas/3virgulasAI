@@ -75,4 +75,4 @@ export type UncensoredModelId = keyof typeof UNCENSORED_MODELS;
 export const DEFAULT_MODEL: UncensoredModelId = 'nousresearch/hermes-3-llama-3.1-405b:free';
 
 // Modelo de fallback (alta disponibilidade, caso o principal falhe)
-export const FALLBACK_MODEL = 'google/gemini-2.0-flash-exp:free';
+export const FALLBACK_MODEL = 'nousresearch/deephermes-3-mistral-24b-preview';
