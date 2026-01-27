@@ -74,5 +74,8 @@ export type UncensoredModelId = keyof typeof UNCENSORED_MODELS;
 // Modelo padrão (uncensored e gratuito)
 export const DEFAULT_MODEL: UncensoredModelId = 'nousresearch/hermes-3-llama-3.1-405b:free';
 
+export const FREE_MODEL = 'Hermes-4.3-36B';
+export const PREMIUM_MODEL = 'Hermes-3-Llama-3.1-405B';
+
 // Modelo de fallback (alta disponibilidade, caso o principal falhe)
 export const FALLBACK_MODEL = 'nousresearch/deephermes-3-mistral-24b-preview';

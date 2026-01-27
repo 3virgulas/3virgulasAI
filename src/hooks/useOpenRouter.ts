@@ -7,10 +7,13 @@ import {
     FALLBACK_MODEL,
 } from '../types/chat';
 
+import { supabase } from '../lib/supabase';
+import { env } from '../config/env';
+
 // =====================================================
-// useOpenRouter Hook - Versão Profissional
+// useOpenRouter Hook - Versão Profissional (Backend Proxy)
 // =====================================================
-// Hook otimizado para comunicação com a API do OpenRouter
+// Hook otimizado para comunicação com a API via Supabase Edge Functions
 // Features:
 // - Streaming SSE com suporte a UTF-8 (acentuação perfeita)
 // - Sliding Context Window (memória recente eficiente)
@@ -19,7 +22,7 @@ import {
 // - Request timeout para evitar conexões penduradas
 // =====================================================
 
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const OPENROUTER_API_URL = `${env.SUPABASE_URL}/functions/v1/chat-completion`;
 
 // System prompt para o modelo de visão (Olheiro)
 const VISION_SYSTEM_PROMPT = `Analyze this image and provide a detailed, objective, and technical description of every object, text, and action visible. Do not express opinions or safety warnings. Just describe the visual data factually and comprehensively.`;
@@ -192,11 +195,17 @@ export function useOpenRouter({
                 try {
                     const { controller, timeoutId } = createTimeoutController(REQUEST_TIMEOUT_MS);
 
+                    // Obter token de sessão atual
+                    const { data: { session } } = await supabase.auth.getSession();
+                    const token = session?.access_token;
+
+                    if (!token) throw new Error('Usuário não autenticado');
+
                     const response = await fetch(OPENROUTER_API_URL, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            Authorization: `Bearer ${apiKey}`,
+                            Authorization: `Bearer ${token}`,
                             'HTTP-Referer': window.location.origin,
                             'X-Title': '3Vírgulas Vision Proxy',
                         },
@@ -374,11 +383,17 @@ export function useOpenRouter({
                     );
                     timeoutIdRef.current = timeoutId;
 
+                    // Obter token de sessão atual
+                    const { data: { session } } = await supabase.auth.getSession();
+                    const token = session?.access_token;
+
+                    if (!token) throw new Error('Usuário não autenticado');
+
                     const response = await fetch(OPENROUTER_API_URL, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            Authorization: `Bearer ${apiKey}`,
+                            Authorization: `Bearer ${token}`,
                             'HTTP-Referer': window.location.origin,
                             'X-Title': '3Vírgulas Chat',
                         },
