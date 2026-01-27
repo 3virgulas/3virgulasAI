@@ -4,6 +4,7 @@ import {
     OpenRouterChunk,
     ModelConfig,
     DEFAULT_MODEL,
+    FALLBACK_MODEL,
 } from '../types/chat';
 
 // =====================================================
@@ -519,8 +520,42 @@ export function useOpenRouter({
         [apiKey, defaultModel, defaultSystemPrompt, onToken, onComplete, onError]
     );
 
+    // =====================================================
+    // Wrapper com Auto-Fallback
+    // =====================================================
+    const sendMessageWithFallback = useCallback(async (messages: OpenRouterMessage[], options?: SendMessageOptions): Promise<string> => {
+        try {
+            return await sendMessage(messages, options);
+        } catch (error: any) {
+            // Se falhou e foi um erro de provedor (503, 502, 500, Timeout)
+            // E ainda não estamos usando o modelo de fallback
+            const isProviderError = error.message.includes('503') ||
+                error.message.includes('502') ||
+                error.message.includes('Provider returned error') ||
+                error.message.includes('Service Unavailable');
+
+            const currentModel = options?.model ?? defaultModel;
+
+            if (isProviderError && currentModel !== FALLBACK_MODEL) {
+                console.warn(`⚠️ Primary model (${currentModel}) failed. Switching to FALLBACK (${FALLBACK_MODEL})...`);
+
+                // Tentar novamente com o modelo de fallback
+                const fallbackOptions = {
+                    ...options,
+                    model: FALLBACK_MODEL
+                };
+
+                // Pequeno delay antes do fallback
+                await delay(1000);
+                return await sendMessage(messages, fallbackOptions);
+            }
+
+            throw error;
+        }
+    }, [sendMessage, defaultModel]);
+
     return {
-        sendMessage,
+        sendMessage: sendMessageWithFallback,
         analyzeImage,
         isStreaming,
         isAnalyzingImage,
