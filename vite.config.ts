@@ -14,8 +14,8 @@ export default defineConfig({
             registerType: 'autoUpdate',
             includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
             manifest: {
-                name: '3Vírgulas Prometheus',
-                short_name: 'Prometheus',
+                name: '3Vírgulas AI',
+                short_name: '3Vírgulas',
                 description: 'IA Sem Censura. Superinteligência 405B.',
                 theme_color: '#000000',
                 background_color: '#000000',
