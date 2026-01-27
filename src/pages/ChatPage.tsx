@@ -205,19 +205,31 @@ export function ChatPage() {
                         body: { query: content }
                     });
 
-                    console.log("🔍 [DEBUG] Resposta Bruta da Tavily:", data);
-                    if (error) {
-                        console.error("❌ Erro na API:", error);
-                    }
+                    console.log("🔍 [DEBUG] Resposta Deep Research:", data);
 
-                    if (error) throw error;
+                    if (error) {
+                        // Verificando se é erro de limite (403 ou mensagem específica)
+                        const isLimitError = error && (
+                            error.code === 403 ||
+                            error.context?.response?.status === 403 ||
+                            (error.message && error.message.includes('Limite')) ||
+                            (error.message && error.message.includes('300'))
+                        );
+
+                        if (isLimitError) {
+                            alert("Você atingiu seu limite de 300 pesquisas mensais.");
+                            setIsWebSearchEnabled(false);
+                        }
+
+                        throw error;
+                    }
 
                     if (data && data.context) {
                         searchContext = data.context;
                     }
                 } catch (err) {
                     console.error('Deep Search failed:', err);
-                    // Opcional: Mostrar toast de erro
+                    // Erro já tratado no if(error) acima se for limite
                 } finally {
                     setIsSearchingWeb(false);
                 }
