@@ -141,8 +141,17 @@ export function useSubscription(userId?: string): UseSubscriptionReturn {
     // =====================================================
     const generatePixPayment = async (isRenewal = false): Promise<PixPaymentResponse> => {
         try {
+            // [MODIFIED] Pagar.me Integration
+            // Replace 'create-suitpay-payment' with 'create-pagarme-payment'
+            // const { data, error: fnError } = await supabase.functions.invoke(
+            //     'create-suitpay-payment',
+            //     {
+            //         body: { isRenewal }
+            //     }
+            // );
+
             const { data, error: fnError } = await supabase.functions.invoke(
-                'create-suitpay-payment',
+                'create-pagarme-payment',
                 {
                     body: { isRenewal }
                 }
@@ -172,8 +181,17 @@ export function useSubscription(userId?: string): UseSubscriptionReturn {
     // =====================================================
     const checkPaymentStatus = async (transactionId?: string): Promise<PaymentStatusResponse> => {
         try {
+            // [MODIFIED] Pagar.me Integration
+            // Replace 'check-suitpay-payment-status' with 'check-pagarme-payment-status'
+            // const { data, error: fnError } = await supabase.functions.invoke(
+            //     'check-suitpay-payment-status',
+            //     {
+            //         body: { transactionId }
+            //     }
+            // );
+
             const { data, error: fnError } = await supabase.functions.invoke(
-                'check-suitpay-payment-status',
+                'check-pagarme-payment-status',
                 {
                     body: { transactionId }
                 }

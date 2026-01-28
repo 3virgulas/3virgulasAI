@@ -31,7 +31,8 @@ export interface Profile {
 export interface PixPaymentResponse {
     success: boolean;
     pixCode?: string;
-    qrCodeImage?: string;
+    qrCodeImage?: string; // SuitPay (Base64)
+    qrCodeUrl?: string;   // Pagar.me (URL)
     transaction_id?: string;
     user_id?: string;
     amount?: number;

@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useSubscription } from '../hooks/useSubscription';
 import { PhoneFormModal } from './ProfileFormModal';
+import QRCode from 'react-qr-code';
 
 interface PremiumPaymentModalProps {
     isOpen: boolean;
@@ -48,6 +49,9 @@ export function PremiumPaymentModal({
     const [isGenerating, setIsGenerating] = useState(false);
     const [pixCode, setPixCode] = useState<string | null>(null);
     const [qrCodeImage, setQrCodeImage] = useState<string | null>(null);
+    const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+    // [REMOVED] Async generation state/effect
+
     const [error, setError] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
     const [isPolling, setIsPolling] = useState(false);
@@ -61,6 +65,7 @@ export function PremiumPaymentModal({
         if (!isOpen) {
             setPixCode(null);
             setQrCodeImage(null);
+            setQrCodeUrl(null);
             setError(null);
             setCopied(false);
             setIsPolling(false);
@@ -94,6 +99,7 @@ export function PremiumPaymentModal({
             if (result.success && result.pixCode) {
                 setPixCode(result.pixCode);
                 setQrCodeImage(result.qrCodeImage || null);
+                setQrCodeUrl(result.qrCodeUrl || null);
 
                 // Iniciar polling como fallback
                 startPolling(result.transaction_id || null);
@@ -308,107 +314,118 @@ export function PremiumPaymentModal({
                         {pixCode && (
                             <div className="space-y-4">
                                 <div className="text-center">
-                                    <p className="text-sm text-dark-text-secondary mb-3">
-                                        Escaneie o QR Code ou copie o código PIX
-                                    </p>
+                                    {/* DEBUG INFO */}
+                                    <div className="text-[10px] text-gray-500 text-center mb-2 font-mono">
+                                        DEBUG: {qrCodeUrl ? 'URL_MODE' : pixCode ? `PIX_MODE (${pixCode.length})` : 'LOADING'}
+                                    </div>
 
-                                    {/* QR Code Image */}
-                                    {qrCodeImage ? (
-                                        <div className="inline-block p-4 bg-white rounded-xl">
-                                            <img
-                                                src={`data:image/png;base64,${qrCodeImage}`}
-                                                alt="QR Code PIX"
-                                                className="w-48 h-48"
-                                            />
+                                    {/* LOGIC SPLIT - Explicit Blocks */}
+                                    {qrCodeUrl ? (
+                                        <div className="text-center">
+                                            <div className="inline-block p-4 bg-white rounded-xl">
+                                                <img src={qrCodeUrl} alt="QR Code PIX" className="w-48 h-48" />
+                                            </div>
+                                        </div>
+                                    ) : pixCode ? (
+                                        <div className="text-center">
+                                            <div className="inline-block p-4 bg-white rounded-xl">
+                                                <div className="w-48 h-48">
+                                                    <QRCode
+                                                        value={pixCode}
+                                                        size={256}
+                                                        style={{ height: "100%", maxWidth: "100%", width: "100%" }}
+                                                        viewBox="0 0 256 256"
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
                                     ) : (
-                                        <div className="inline-flex items-center justify-center w-48 h-48 bg-dark-hover rounded-xl">
-                                            <Loader2 className="w-8 h-8 animate-spin text-matrix-primary" />
+                                        <div className="text-center">
+                                            <div className="inline-flex items-center justify-center w-48 h-48 bg-dark-hover rounded-xl">
+                                                <Loader2 className="w-8 h-8 animate-spin text-matrix-primary" />
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="space-y-2">
+                                        <p className="text-xs text-dark-text-muted text-center">
+                                            Ou copie o código abaixo:
+                                        </p>
+                                        <div className="relative">
+                                            <div className="p-3 bg-dark-hover rounded-lg font-mono text-xs text-dark-text-secondary break-all max-h-20 overflow-y-auto">
+                                                {pixCode}
+                                            </div>
+                                            <button
+                                                onClick={handleCopyPix}
+                                                className={`absolute top-2 right-2 p-2 rounded-lg transition-all ${copied
+                                                    ? 'bg-matrix-primary text-dark-bg'
+                                                    : 'bg-dark-surface hover:bg-dark-border text-dark-text-muted'
+                                                    }`}
+                                            >
+                                                {copied ? (
+                                                    <Check className="w-4 h-4" />
+                                                ) : (
+                                                    <Copy className="w-4 h-4" />
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Status de polling */}
+                                    {isPolling && (
+                                        <div className="flex items-center justify-center gap-2 text-sm text-dark-text-muted">
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            <span>Aguardando confirmação do pagamento...</span>
                                         </div>
                                     )}
                                 </div>
+                        )}
 
-                                {/* Código PIX (copia e cola) */}
-                                <div className="space-y-2">
-                                    <p className="text-xs text-dark-text-muted text-center">
-                                        Ou copie o código abaixo:
-                                    </p>
-                                    <div className="relative">
-                                        <div className="p-3 bg-dark-hover rounded-lg font-mono text-xs text-dark-text-secondary break-all max-h-20 overflow-y-auto">
-                                            {pixCode}
-                                        </div>
-                                        <button
-                                            onClick={handleCopyPix}
-                                            className={`absolute top-2 right-2 p-2 rounded-lg transition-all ${copied
-                                                ? 'bg-matrix-primary text-dark-bg'
-                                                : 'bg-dark-surface hover:bg-dark-border text-dark-text-muted'
-                                                }`}
-                                        >
-                                            {copied ? (
-                                                <Check className="w-4 h-4" />
-                                            ) : (
-                                                <Copy className="w-4 h-4" />
-                                            )}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Status de polling */}
-                                {isPolling && (
-                                    <div className="flex items-center justify-center gap-2 text-sm text-dark-text-muted">
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        <span>Aguardando confirmação do pagamento...</span>
-                                    </div>
+                                {/* Botão de ação */}
+                                {!pixCode && (
+                                    <button
+                                        onClick={handleGeneratePix}
+                                        disabled={isGenerating}
+                                        className="w-full py-3.5 px-4 rounded-xl font-bold text-dark-bg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                        style={{
+                                            background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+                                        }}
+                                    >
+                                        {isGenerating ? (
+                                            <>
+                                                <Loader2 className="w-5 h-5 animate-spin" />
+                                                Gerando PIX...
+                                            </>
+                                        ) : !hasPhone ? (
+                                            <>
+                                                <Phone className="w-5 h-5" />
+                                                Adicionar Telefone
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Zap className="w-5 h-5 fill-current" />
+                                                Gerar PIX de R$ 34,90
+                                            </>
+                                        )}
+                                    </button>
                                 )}
+
+                                {/* Nota de segurança */}
+                                <p className="text-center text-[10px] text-dark-text-muted">
+                                    Pagamento processado via PIX • Pagar.me
+                                </p>
                             </div>
-                        )}
-
-                        {/* Botão de ação */}
-                        {!pixCode && (
-                            <button
-                                onClick={handleGeneratePix}
-                                disabled={isGenerating}
-                                className="w-full py-3.5 px-4 rounded-xl font-bold text-dark-bg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                style={{
-                                    background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-                                }}
-                            >
-                                {isGenerating ? (
-                                    <>
-                                        <Loader2 className="w-5 h-5 animate-spin" />
-                                        Gerando PIX...
-                                    </>
-                                ) : !hasPhone ? (
-                                    <>
-                                        <Phone className="w-5 h-5" />
-                                        Adicionar Telefone
-                                    </>
-                                ) : (
-                                    <>
-                                        <Zap className="w-5 h-5 fill-current" />
-                                        Gerar PIX de R$ 34,90
-                                    </>
-                                )}
-                            </button>
-                        )}
-
-                        {/* Nota de segurança */}
-                        <p className="text-center text-[10px] text-dark-text-muted">
-                            Pagamento processado via PIX • SuitPay
-                        </p>
-                    </div>
                 </div>
-            </div>
+                </div>
 
-            {/* Modal de Telefone */}
-            <PhoneFormModal
-                isOpen={showProfileForm}
-                onClose={() => setShowProfileForm(false)}
-                onSave={handlePhoneSave}
-                initialPhone={profile?.cellphone}
-            />
-        </>
-    );
+                {/* Modal de Telefone */}
+                <PhoneFormModal
+                    isOpen={showProfileForm}
+                    onClose={() => setShowProfileForm(false)}
+                    onSave={handlePhoneSave}
+                    initialPhone={profile?.cellphone}
+                />
+            </>
+            );
 }
 
-export default PremiumPaymentModal;
+            export default PremiumPaymentModal;
