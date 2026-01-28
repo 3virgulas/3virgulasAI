@@ -143,15 +143,19 @@ export function useSubscription(userId?: string): UseSubscriptionReturn {
         try {
             // [MODIFIED] Pagar.me Integration
             // Replace 'create-suitpay-payment' with 'create-pagarme-payment'
-            // const { data, error: fnError } = await supabase.functions.invoke(
-            //     'create-suitpay-payment',
-            //     {
-            //         body: { isRenewal }
-            //     }
-            // );
-
+            // [MODIFIED] Pagar.me Integration (COMMENTED OUT TO REVERT TO SUITPAY)
+            /*
             const { data, error: fnError } = await supabase.functions.invoke(
                 'create-pagarme-payment',
+                {
+                    body: { isRenewal }
+                }
+            );
+            */
+
+            // [REVERTED] SuitPay Integration
+            const { data, error: fnError } = await supabase.functions.invoke(
+                'create-suitpay-payment',
                 {
                     body: { isRenewal }
                 }
@@ -183,15 +187,19 @@ export function useSubscription(userId?: string): UseSubscriptionReturn {
         try {
             // [MODIFIED] Pagar.me Integration
             // Replace 'check-suitpay-payment-status' with 'check-pagarme-payment-status'
-            // const { data, error: fnError } = await supabase.functions.invoke(
-            //     'check-suitpay-payment-status',
-            //     {
-            //         body: { transactionId }
-            //     }
-            // );
-
+            // [MODIFIED] Pagar.me Integration (COMMENTED OUT TO REVERT TO SUITPAY)
+            /*
             const { data, error: fnError } = await supabase.functions.invoke(
                 'check-pagarme-payment-status',
+                {
+                    body: { transactionId }
+                }
+            );
+            */
+
+            // [REVERTED] SuitPay Integration
+            const { data, error: fnError } = await supabase.functions.invoke(
+                'check-suitpay-payment-status',
                 {
                     body: { transactionId }
                 }
