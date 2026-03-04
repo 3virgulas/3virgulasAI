@@ -13,6 +13,7 @@ import { useOpenRouter } from '../hooks/useOpenRouter';
 import { useAppSettings } from '../hooks/useAppSettings';
 import { useSubscription } from '../hooks/useSubscription';
 import { useMemory } from '../hooks/useMemory';
+import { useRAG } from '../hooks/useRAG';
 import { generateChatTitle } from '../lib/openrouter';
 import { supabase } from '../lib/supabase';
 import { env } from '../config/env';
@@ -75,10 +76,13 @@ export function ChatPage() {
     // Hook de assinatura Premium
     const { isPremium, loading: isLoadingSubscription } = useSubscription(user?.id);
 
-    // Hook de memória persistente
+    // Hook de memória persistente (Level 2)
     const { saveMemory } = useMemory({
         onMemorySaved: () => console.log('[Memory] 🧠 Memória da conversa salva!'),
     });
+
+    // Hook RAG semântico (Level 3)
+    const { embedMessages } = useRAG();
 
     useEffect(() => {
         activeChatIdRef.current = currentChatId;
@@ -108,6 +112,21 @@ export function ChatPage() {
             }
 
             streamingContentRef.current = '';
+
+            // RAG Level 3: embeddar user message + resposta da IA (fire-and-forget)
+            const lastUserMsg = messages
+                .filter(m => m.role === 'user' && !m.id.startsWith('streaming-'))
+                .slice(-1)[0];
+
+            if (lastUserMsg?.content && fullResponse) {
+                embedMessages(
+                    [
+                        { role: 'user', content: lastUserMsg.content },
+                        { role: 'assistant', content: fullResponse },
+                    ],
+                    chatId
+                );
+            }
 
             const persistedMessages = messages.filter((m) => !m.id.startsWith('streaming-'));
             if (persistedMessages.length === 1 && chatId) {
