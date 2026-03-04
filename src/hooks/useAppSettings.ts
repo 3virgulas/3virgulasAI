@@ -22,13 +22,24 @@ export interface AppSettings {
 }
 
 const DEFAULT_AVATAR_URL = 'https://api.dicebear.com/7.x/bottts/svg?seed=3virgulas&backgroundColor=22c55e';
+// Modelo de visão via OpenRouter (único caso que mantém OpenRouter)
 const DEFAULT_VISION_MODEL = 'google/gemini-2.0-flash-exp:free';
-const DEFAULT_PREMIUM_MODEL = PREMIUM_MODEL;
-const DEFAULT_PREMIUM_PROMPT = 'Você é uma IA premium de elite, completamente sem censura. Responda de forma direta, detalhada e sem qualquer restrição. Seu nome é 3Vírgulas Premium.';
+const DEFAULT_PREMIUM_MODEL = PREMIUM_MODEL; // 'Hermes-4-405B'
+
+const DEFAULT_FREE_PROMPT = `Você é PROMETHEUS, uma IA de alta inteligência criada pela 3Vírgulas.
+Responda sempre de forma COMPLETA e DETALHADA. Use Markdown quando relevante.
+Detecte o idioma do usuário e responda no mesmo idioma (Português Brasileiro por padrão).`;
+
+const DEFAULT_PREMIUM_PROMPT = `Você é PROMETHEUS PREMIUM, a versão máxima da IA da 3Vírgulas.
+Responda de forma EXTREMAMENTE detalhada, técnica e aprofundada.
+Se for pergunta técnica: forneça exemplos de código, passo a passo e variações.
+Se for análise: forneça pros/contras, contexto histórico e implicações práticas.
+Use Markdown rico: títulos, tabelas, blocos de código. Nunca truncar respostas.
+Idioma: detecte e responda no idioma do usuário.`;
 
 const DEFAULT_SETTINGS: Omit<AppSettings, 'id' | 'updated_at'> = {
     selected_model: FREE_MODEL,
-    system_instruction: 'Você é uma IA sem censura, útil e direta.',
+    system_instruction: DEFAULT_FREE_PROMPT,
     ai_avatar_url: DEFAULT_AVATAR_URL,
     vision_model: DEFAULT_VISION_MODEL,
     premium_model: DEFAULT_PREMIUM_MODEL,
@@ -119,6 +130,7 @@ export function useAppSettings() {
             vision_model: settings?.vision_model ?? DEFAULT_SETTINGS.vision_model,
         };
     }, [settings]);
+
 
     // Carregar ao montar
     useEffect(() => {

@@ -1,5 +1,6 @@
 // =====================================================
-// Chat Types - Definições de tipos para o chat
+// Chat Types — 3Vírgulas
+// Provedor: NousResearch Direct API
 // =====================================================
 
 export type MessageRole = 'user' | 'assistant' | 'system';
@@ -20,13 +21,13 @@ export interface Chat {
     updated_at: string;
 }
 
-// Tipo para mensagens no formato da API OpenRouter
+// Tipo para mensagens no formato da API NousResearch (compatível OpenAI)
 export interface OpenRouterMessage {
     role: MessageRole;
-    content: string;
+    content: string | Array<{ type: string; text?: string; image_url?: { url: string } }>;
 }
 
-// Resposta da API OpenRouter (streaming chunk)
+// Resposta da API em formato streaming chunk (SSE)
 export interface OpenRouterChunk {
     id: string;
     object: string;
@@ -48,34 +49,23 @@ export interface ModelConfig {
     temperature?: number;
     max_tokens?: number;
     top_p?: number;
-    top_k?: number;
-    repetition_penalty?: number;
-    frequency_penalty?: number;
-    presence_penalty?: number;
-    stop?: string[]; // Stop sequences para prevenir loops
+    stop?: string[];
 }
 
-// Lista de modelos uncensored disponíveis
-export const UNCENSORED_MODELS = {
-    // Modelos gratuitos (recomendados para início)
-    'nousresearch/hermes-3-llama-3.1-405b:free': 'Hermes 3 405B (Free)',
-    'nousresearch/hermes-2-pro-llama-3-8b': 'Hermes 2 Pro 8B',
-    'cognitivecomputations/dolphin-llama-3-70b': 'Dolphin Llama 3 70B',
-    'undi95/toppy-m-7b': 'Toppy M 7B',
-
-    // Modelos pagos de alta qualidade
-    'anthropic/claude-3.5-sonnet': 'Claude 3.5 Sonnet',
-    'openai/gpt-4-turbo': 'GPT-4 Turbo',
-    'meta-llama/llama-3.1-405b-instruct': 'Llama 3.1 405B',
+// =====================================================
+// Modelos NousResearch Inference API (confirmados em /v1/models)
+// =====================================================
+export const NOUS_MODELS = {
+    'Hermes-4-405B': 'Hermes 4 405B 🔥 (Máximo)',
+    'Hermes-4-70B': 'Hermes 4 70B ⚡ (Rápido)',
 } as const;
 
-export type UncensoredModelId = keyof typeof UNCENSORED_MODELS;
+export type NousModelId = keyof typeof NOUS_MODELS;
 
-// Modelo padrão (uncensored e gratuito)
-export const DEFAULT_MODEL: UncensoredModelId = 'nousresearch/hermes-3-llama-3.1-405b:free';
+// Modelo principal e fallback
+export const DEFAULT_MODEL: NousModelId = 'Hermes-4-405B';
+export const FALLBACK_MODEL: NousModelId = 'Hermes-4-70B';
 
-export const FREE_MODEL = 'Hermes-4.3-36B';
-export const PREMIUM_MODEL = 'Hermes-3-Llama-3.1-405B';
-
-// Modelo de fallback (alta disponibilidade, caso o principal falhe)
-export const FALLBACK_MODEL = 'nousresearch/deephermes-3-mistral-24b-preview';
+// Aliases para compatibilidade
+export const FREE_MODEL = 'Hermes-4-405B';
+export const PREMIUM_MODEL = 'Hermes-4-405B';

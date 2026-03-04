@@ -11,8 +11,12 @@ import {
     ModelConfig,
     DEFAULT_MODEL
 } from '../types/chat';
+import { supabase } from './supabase';
+import { env } from '../config/env';
 
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+// Roteamento via Edge Function (auth via Supabase session)
+const EDGE_FUNCTION_URL = `${env.SUPABASE_URL}/functions/v1/chat-completion`;
+
 
 // =====================================================
 // Sliding Context Window Configuration
@@ -67,32 +71,31 @@ export async function streamOpenRouterResponse({
         ? messages.slice(-CONTEXT_WINDOW_SIZE)
         : messages;
 
-    const preparedMessages: OpenRouterMessage[] = systemPrompt
-        ? [{ role: 'system', content: systemPrompt }, ...recentMessages]
-        : recentMessages;
+    // Edge Function injeta o system prompt automaticamente para NousResearch
 
     const modelConfig: ModelConfig = {
         model,
-        temperature: 0.7,           // Equilíbrio entre criatividade e lógica
-        max_tokens: 2048,           // Reduzido de 4096 para evitar delírios
-        top_p: 0.9,                 // Corta respostas estatisticamente improváveis
-        top_k: 40,                  // Limita vocabulário para manter coerência
-        repetition_penalty: 1.1,    // CRÍTICO: Penaliza repetição de palavras/frases
-        stop: STOP_SEQUENCES,       // CRÍTICO: Para antes de loops de conclusão
+        temperature: 0.65,
+        max_tokens: 8096,
+        top_p: 0.85,
+        stop: STOP_SEQUENCES,
     };
 
     try {
-        const response = await fetch(OPENROUTER_API_URL, {
+        // Obter token de sessão
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token || apiKey;
+
+        const response = await fetch(EDGE_FUNCTION_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`,
-                'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : '',
-                'X-Title': '3Vírgulas Chat',
+                'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify({
                 ...modelConfig,
-                messages: preparedMessages,
+                messages: recentMessages,
+                system_prompt: systemPrompt,
                 stream: true,
             }),
             signal,
@@ -174,28 +177,27 @@ export async function fetchOpenRouterResponse({
         ? messages.slice(-CONTEXT_WINDOW_SIZE)
         : messages;
 
-    const preparedMessages: OpenRouterMessage[] = systemPrompt
-        ? [{ role: 'system', content: systemPrompt }, ...recentMessages]
-        : recentMessages;
+    // Edge Function injeta o system prompt automaticamente para NousResearch
 
-    const response = await fetch(OPENROUTER_API_URL, {
+    // Obter token de sessão
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token || apiKey;
+
+    const response = await fetch(EDGE_FUNCTION_URL, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-            'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : '',
-            'X-Title': '3Vírgulas Chat',
+            'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
             model,
-            messages: preparedMessages,
-            temperature: 0.7,           // Equilíbrio entre criatividade e lógica
-            max_tokens: 2048,           // Reduzido de 4096 para evitar delírios
-            top_p: 0.9,                 // Corta respostas estatisticamente improváveis
-            top_k: 40,                  // Limita vocabulário para manter coerência
-            repetition_penalty: 1.1,    // CRÍTICO: Penaliza repetição de palavras/frases
-            stop: STOP_SEQUENCES,       // CRÍTICO: Para antes de loops de conclusão
-            stream: false,              // Sem streaming
+            messages: recentMessages,
+            system_prompt: systemPrompt,
+            temperature: 0.65,
+            max_tokens: 8096,
+            top_p: 0.85,
+            stop: STOP_SEQUENCES,
+            stream: false,
         }),
     });
 
