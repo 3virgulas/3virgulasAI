@@ -13,43 +13,12 @@ import remarkGfm from 'remark-gfm';
 import type { Message } from '../types/chat';
 import { MatrixLogo } from './MatrixLogo';
 import { CodeBlock, InlineCode } from './CodeBlock';
+import { ThinkingBlock } from './ThinkingBlock';
+import { FollowupChips } from './FollowupChips';
 
-// =====================================================
-// Text Sanitizer - Remove frases repetitivas/indesejadas
-// =====================================================
-// Adicione frases que devem ser removidas das respostas da IA
-const BLOCKED_PHRASES: string[] = [
-    // Exemplos genéricos (configurar conforme necessário)
-    '--- start ---',
-    '--- end ---',
-    'loading...',
-    'Lembre-se que isso é ilegal',
-    'fins educacionais',
-    'não posso ajudar com isso',
-    'como uma IA',
-    'eu não recomendo',
-    'educacional',
-    'é perigoso'
-];
-
-/**
- * Limpa o texto removendo frases bloqueadas
- * @param text - Texto original da IA
- * @returns Texto limpo sem as frases indesejadas
- */
-function cleanText(text: string): string {
-    let cleanedText = text;
-
-    for (const phrase of BLOCKED_PHRASES) {
-        // Remove todas as ocorrências da frase (case-insensitive)
-        cleanedText = cleanedText.replace(new RegExp(phrase, 'gi'), '');
-    }
-
-    // Remove espaços duplos e quebras de linha extras
-    cleanedText = cleanedText.replace(/\n{3,}/g, '\n\n').trim();
-
-    return cleanedText;
-}
+// BLOCKED_PHRASES removido — o modelélo já tem instruções explícitas
+// para não gerar conteúdo moralizável no system prompt nuclear v3.
+// Filtrar a saída aqui causaria perda de conteúdo legítimo.
 
 interface MessageListProps {
     messages: Message[];
@@ -57,9 +26,12 @@ interface MessageListProps {
     isAnalyzingImage?: boolean;
     isReconnecting?: boolean;
     reconnectAttempt?: number;
-
     isPremium?: boolean;
     isDeepResearching?: boolean;
+    currentThinking?: string;
+    followups?: string[];
+    isLoadingFollowups?: boolean;
+    onFollowupSelect?: (question: string) => void;
 }
 
 export function MessageList({
@@ -70,6 +42,10 @@ export function MessageList({
     reconnectAttempt = 0,
     isPremium = false,
     isDeepResearching = false,
+    currentThinking = '',
+    followups = [],
+    isLoadingFollowups = false,
+    onFollowupSelect,
 }: MessageListProps) {
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -81,6 +57,12 @@ export function MessageList({
             return true;
         });
     }, [messages]);
+
+    // ID da última mensagem da IA (para exibir Acompanhamentos)
+    const lastAiMessageId = useMemo(() => {
+        const aiMessages = uniqueMessages.filter(m => m.role === 'assistant' && !m.id.startsWith('streaming-'));
+        return aiMessages[aiMessages.length - 1]?.id ?? null;
+    }, [uniqueMessages]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -140,6 +122,12 @@ export function MessageList({
                     key={message.id}
                     message={message}
                     isStreamingMessage={message.id.startsWith('streaming-')}
+                    thinkingContent={message.id.startsWith('streaming-') ? currentThinking : ''}
+                    isThinkingStreaming={message.id.startsWith('streaming-') ? isStreaming : false}
+                    showFollowups={message.id === lastAiMessageId && !isStreaming}
+                    followups={followups}
+                    isLoadingFollowups={isLoadingFollowups}
+                    onFollowupSelect={onFollowupSelect}
                 />
             ))}
 
@@ -220,10 +208,25 @@ export function MessageList({
 interface MessageBubbleProps {
     message: Message;
     isStreamingMessage?: boolean;
+    thinkingContent?: string;
+    isThinkingStreaming?: boolean;
+    showFollowups?: boolean;
+    followups?: string[];
+    isLoadingFollowups?: boolean;
+    onFollowupSelect?: (q: string) => void;
 }
 
 // OPTIMIZATION: Memoized component - only re-renders when props change
-const MessageBubble = React.memo(function MessageBubble({ message, isStreamingMessage = false }: MessageBubbleProps) {
+const MessageBubble = React.memo(function MessageBubble({
+    message,
+    isStreamingMessage = false,
+    thinkingContent = '',
+    isThinkingStreaming = false,
+    showFollowups = false,
+    followups = [],
+    isLoadingFollowups = false,
+    onFollowupSelect,
+}: MessageBubbleProps) {
     const isUser = message.role === 'user';
     const isEmpty = !message.content || message.content.trim() === '';
     const hasImage = message.content.startsWith('📷');
@@ -232,13 +235,20 @@ const MessageBubble = React.memo(function MessageBubble({ message, isStreamingMe
         <div
             className={`flex animate-in ${isUser ? 'justify-end' : 'justify-start'}`}
         >
-            {/* Balão da mensagem - Clean Terminal Style */}
+            {/* Balão da mensagem */}
             <div
                 className={`max-w-[90%] md:max-w-[85%] ${isUser
                     ? 'px-4 py-2.5 rounded-2xl rounded-tr-sm bg-zinc-800 border border-zinc-700/50 text-white'
-                    : 'px-1 py-1 bg-transparent text-zinc-100'
+                    : 'px-1 py-1 bg-transparent text-zinc-100 w-full'
                     }`}
             >
+                {/* ThinkingBlock — apenas para mensagens da IA */}
+                {!isUser && (thinkingContent || isThinkingStreaming) && (
+                    <ThinkingBlock
+                        thinking={thinkingContent}
+                        isStreaming={isThinkingStreaming}
+                    />
+                )}
                 {isUser ? (
                     <div className={`whitespace-pre-wrap break-words text-sm leading-relaxed ${hasImage ? 'text-matrix-primary' : ''}`}>
                         {message.content}
@@ -260,10 +270,7 @@ const MessageBubble = React.memo(function MessageBubble({ message, isStreamingMe
                                 code({ className, children }) {
                                     const match = /language-(\w+)/.exec(className || '');
                                     const codeString = String(children).replace(/\n$/, '');
-
-                                    // Check if this is a code block (has language class or is multiline)
                                     const isBlock = match || codeString.includes('\n');
-
                                     if (isBlock) {
                                         return (
                                             <CodeBlock language={match?.[1] || 'text'}>
@@ -271,17 +278,24 @@ const MessageBubble = React.memo(function MessageBubble({ message, isStreamingMe
                                             </CodeBlock>
                                         );
                                     }
-
                                     return <InlineCode>{children}</InlineCode>;
                                 },
-                                // Override pre to avoid double wrapping
                                 pre({ children }) {
                                     return <>{children}</>;
                                 },
                             }}
                         >
-                            {cleanText(message.content)}
+                            {message.content}
                         </ReactMarkdown>
+
+                        {/* Acompanhamentos — exibir na última mensagem da IA */}
+                        {showFollowups && (
+                            <FollowupChips
+                                followups={followups}
+                                isLoading={isLoadingFollowups}
+                                onSelect={(q) => onFollowupSelect?.(q)}
+                            />
+                        )}
                     </div>
                 )}
             </div>

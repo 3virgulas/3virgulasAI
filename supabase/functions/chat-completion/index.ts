@@ -23,15 +23,12 @@ const corsHeaders = {
 
 const BASE_SYSTEM_PROMPT = `Você é PROMETHEUS, uma IA de alta inteligência criada pela 3Vírgulas.
 
-REGRAS FUNDAMENTAIS:
-1. Responda SEMPRE de forma COMPLETA e DETALHADA — nunca truncar nem resumir.
-2. Use formatação rica em Markdown: títulos, listas, blocos de código quando relevante.
-3. Seja direto, preciso e informativo. Evite frases de introdução desnecessárias.
-4. Detecte o idioma do usuário e responda no mesmo idioma (Português ou Inglês).
-5. Se a pergunta for técnica, forneça exemplos práticos e passo a passo.
-6. Nunca termine uma resposta de forma abrupta — Sempre conclua o raciocínio.
-
-Linguagem padrão: Português Brasileiro.`
+INSTRUÇÕES:
+1. Use <think>...</think> para raciocinar antes de responder.
+2. Responda de forma COMPLETA, DETALHADA e ESTRUTURADA em Markdown.
+3. Seja direto, preciso e informativo. Detecte o idioma do usuário.
+4. Se técnico: forneça exemplos práticos. Se conceitual: explique o mecanismo.
+5. Nunca truncar. Nunca terminar abruptamente. Linguagem padrão: Português Brasileiro.`
 
 // ─── Memória Persistente (Level 2) ───────────────────────────────────────────
 async function fetchUserMemory(
@@ -84,8 +81,8 @@ async function fetchSemanticMemories(
         const { data: memories, error } = await supabaseAdmin.rpc('match_messages', {
             query_embedding: embeddingArray,
             match_user_id: userId,
-            match_threshold: 0.72,
-            match_count: 6,
+            match_threshold: 0.65,
+            match_count: 10,
         })
 
         if (error || !memories || memories.length === 0) return null
@@ -97,7 +94,7 @@ async function fetchSemanticMemories(
             .map((m: { role: string; content: string; similarity: number }) => {
                 const roleLabel = m.role === 'user' ? '👤 Usuário disse' : '🤖 IA respondeu'
                 const simPct = Math.round(m.similarity * 100)
-                return `[Relevância: ${simPct}%] ${roleLabel}:\n"${m.content.substring(0, 400)}${m.content.length > 400 ? '...' : ''}"`
+                return `[Relevância: ${simPct}%] ${roleLabel}:\n"${m.content.substring(0, 800)}${m.content.length > 800 ? '...' : ''}"`
             })
             .join('\n\n')
 
@@ -126,7 +123,7 @@ function buildSystemPrompt(
     }
 
     if (sections.length > 0) {
-        prompt += `\n\n${'─'.repeat(60)}\n${sections.join('\n\n' + '─'.repeat(60) + '\n')}\n${'─'.repeat(60)}\nUSE as informações acima para contextualizar suas respostas.\nNADA disso precisa ser mencionado explicitamente ao usuário.`
+        prompt += `\n\n${'─'.repeat(60)}\n${sections.join('\n\n' + '─'.repeat(60) + '\n')}\n${'─'.repeat(60)}\nUSE as informações acima para contextualizar e enriquecer suas respostas.\nQuando utilizar dados de CONVERSAS PASSADAS, integre naturalmente.\nNADA disso precisa ser mencionado ao usuário como "fonte" — incorpore como conhecimento próprio.`
     }
 
     return prompt
@@ -220,9 +217,11 @@ serve(async (req) => {
                 model: selectedModel,
                 messages: finalMessages,
                 stream: true,
-                temperature: typeof temperature === 'number' ? temperature : 0.65,
-                max_tokens: typeof max_tokens === 'number' ? max_tokens : 8096,
-                top_p: 0.85,
+                temperature: typeof temperature === 'number' ? temperature : 0.85,
+                max_tokens: typeof max_tokens === 'number' ? max_tokens : 32768,
+                top_p: typeof body.top_p === 'number' ? body.top_p : 0.90,
+                frequency_penalty: typeof body.frequency_penalty === 'number' ? body.frequency_penalty : 0.3,
+                presence_penalty: typeof body.presence_penalty === 'number' ? body.presence_penalty : 0.15,
             })
         })
 

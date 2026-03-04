@@ -50,6 +50,8 @@ export interface ModelConfig {
     max_tokens?: number;
     top_p?: number;
     stop?: string[];
+    frequency_penalty?: number;
+    presence_penalty?: number;
 }
 
 // =====================================================

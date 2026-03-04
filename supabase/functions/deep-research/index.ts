@@ -104,9 +104,10 @@ serve(async (req) => {
             body: JSON.stringify({
                 api_key: TAVILY_API_KEY,
                 query: query,
-                search_depth: "basic",
+                search_depth: "advanced",
                 include_answer: true,
-                max_results: 5
+                max_results: 8,
+                include_raw_content: false,
             })
         })
 
@@ -133,9 +134,9 @@ serve(async (req) => {
             context += `Summarized Answer: ${data.answer}\n\n`
         }
         if (data.results && Array.isArray(data.results)) {
-            context += "Web Search Results:\n"
+            context += "\uD83D\uDCDA FONTES DA PESQUISA (cite usando [n\u00famero] quando relevante):\n"
             data.results.forEach((r: any, index: number) => {
-                context += `[${index + 1}] ${r.title}\nURL: ${r.url}\nContent: ${r.content}\n\n`
+                context += `[${index + 1}] "${r.title}" \u2014 ${r.url}\n${r.content}\n\n`
             })
         }
 

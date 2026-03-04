@@ -36,16 +36,12 @@ const REQUEST_TIMEOUT_MS = 60000; // 60s — modelos 405B têm latência maior
 
 // Sliding Context Window — mantém as últimas N mensagens
 // Hermes-4-405B suporta 128K tokens de contexto
-// 100 mensagens ≈ 20-30K tokens (bem dentro do limite)
-const CONTEXT_WINDOW_SIZE = 100;
+// 50 mensagens ≈ 15-20K tokens — sweet spot qualidade/custo
+const CONTEXT_WINDOW_SIZE = 50;
 
 
-// Stop Sequences — evita loops e conclusões repetitivas
-const STOP_SEQUENCES = [
-    'Você gostaria de saber mais',
-    'Posso ajudar com algo mais',
-    'Tem mais alguma dúvida',
-];
+// Stop Sequences removidas — o system prompt v4 já controla o encerramento.
+// Manter stop sequences cortava respostas legítimas que continham essas frases.
 
 // =====================================================
 // Helper Functions
@@ -70,7 +66,8 @@ interface UseOpenRouterOptions {
     model?: string;
     systemPrompt?: string;
     onToken?: (token: string) => void;
-    onComplete?: (fullResponse: string) => void;
+    onThinking?: (thinkingContent: string) => void; // Callback para o conteúdo do <think>
+    onComplete?: (fullResponse: string, thinkingContent: string) => void;
     onError?: (error: Error) => void;
 }
 
@@ -92,6 +89,7 @@ interface UseOpenRouterReturn {
     error: Error | null;
     abortStream: () => void;
     currentResponse: string;
+    currentThinking: string; // Conteúdo atual do bloco <think>
 }
 
 // =====================================================
@@ -104,6 +102,7 @@ export function useOpenRouter({
     model: defaultModel = DEFAULT_MODEL,
     systemPrompt: defaultSystemPrompt,
     onToken,
+    onThinking,
     onComplete,
     onError,
 }: UseOpenRouterOptions): UseOpenRouterReturn {
@@ -113,10 +112,13 @@ export function useOpenRouter({
     const [reconnectAttempt, setReconnectAttempt] = useState(0);
     const [error, setError] = useState<Error | null>(null);
     const [currentResponse, setCurrentResponse] = useState('');
+    const [currentThinking, setCurrentThinking] = useState('');
 
     const abortControllerRef = useRef<AbortController | null>(null);
     const timeoutIdRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const fullResponseRef = useRef('');
+    const thinkingRef = useRef('');      // Conteúdo acumulado de <think>
+    const inThinkBlockRef = useRef(false); // Flag: estamos dentro de <think>?
 
     // =====================================================
     // abortStream — Cancelamento imediato e limpo
@@ -252,17 +254,20 @@ export function useOpenRouter({
             const systemPrompt = options?.systemPrompt ?? defaultSystemPrompt;
             const isPremium = options?.isPremium ?? false;
 
-            // Parâmetros de qualidade por tier
-            const maxTokens = options?.maxTokens ?? (isPremium ? 16192 : 8096);
-            const temperature = options?.temperature ?? (isPremium ? 0.75 : 0.65);
+            // Parâmetros de qualidade por tier — máximo possível
+            const maxTokens = options?.maxTokens ?? (isPremium ? 65536 : 32768);
+            const temperature = options?.temperature ?? (isPremium ? 0.9 : 0.85);
 
             // Reset state
             setError(null);
             setCurrentResponse('');
+            setCurrentThinking('');
             setIsStreaming(true);
             setIsReconnecting(false);
             setReconnectAttempt(0);
             fullResponseRef.current = '';
+            thinkingRef.current = '';
+            inThinkBlockRef.current = false;
 
             abortControllerRef.current = new AbortController();
 
@@ -279,8 +284,10 @@ export function useOpenRouter({
                 model,
                 temperature,
                 max_tokens: maxTokens,
-                top_p: isPremium ? 0.9 : 0.85,
-                stop: isPremium ? [] : STOP_SEQUENCES,
+                top_p: isPremium ? 0.95 : 0.90,
+                stop: [],
+                frequency_penalty: 0.3,
+                presence_penalty: 0.15,
             };
 
             const requestBody = {
@@ -377,9 +384,51 @@ export function useOpenRouter({
                                     const content = chunk.choices[0]?.delta?.content;
 
                                     if (content) {
-                                        fullResponseRef.current += content;
-                                        setCurrentResponse(fullResponseRef.current);
-                                        onToken?.(content);
+                                        // ============================================
+                                        // Think-tag parser: separa raciocínio interno
+                                        // da resposta final em tempo real
+                                        // ============================================
+                                        let remaining = content;
+
+                                        while (remaining.length > 0) {
+                                            if (inThinkBlockRef.current) {
+                                                // Dentro de <think>: procurar </think>
+                                                const closeIdx = remaining.indexOf('</think>');
+                                                if (closeIdx !== -1) {
+                                                    // Fim do bloco de raciocínio
+                                                    thinkingRef.current += remaining.substring(0, closeIdx);
+                                                    setCurrentThinking(thinkingRef.current);
+                                                    onThinking?.(thinkingRef.current);
+                                                    inThinkBlockRef.current = false;
+                                                    remaining = remaining.substring(closeIdx + 8); // skip </think>
+                                                } else {
+                                                    // Ainda no bloco de raciocínio
+                                                    thinkingRef.current += remaining;
+                                                    setCurrentThinking(thinkingRef.current);
+                                                    remaining = '';
+                                                }
+                                            } else {
+                                                // Fora de <think>: procurar <think>
+                                                const openIdx = remaining.indexOf('<think>');
+                                                if (openIdx !== -1) {
+                                                    // Tinha conteúdo antes do <think>
+                                                    const before = remaining.substring(0, openIdx);
+                                                    if (before) {
+                                                        fullResponseRef.current += before;
+                                                        setCurrentResponse(fullResponseRef.current);
+                                                        onToken?.(before);
+                                                    }
+                                                    inThinkBlockRef.current = true;
+                                                    remaining = remaining.substring(openIdx + 7); // skip <think>
+                                                } else {
+                                                    // Conteúdo normal da resposta
+                                                    fullResponseRef.current += remaining;
+                                                    setCurrentResponse(fullResponseRef.current);
+                                                    onToken?.(remaining);
+                                                    remaining = '';
+                                                }
+                                            }
+                                        }
                                     }
 
                                     if (chunk.choices[0]?.finish_reason) break;
@@ -402,7 +451,7 @@ export function useOpenRouter({
                     setReconnectAttempt(0);
                     abortControllerRef.current = null;
 
-                    onComplete?.(fullResponseRef.current);
+                    onComplete?.(fullResponseRef.current, thinkingRef.current);
                     return fullResponseRef.current;
 
                 } catch (err) {
@@ -441,7 +490,7 @@ export function useOpenRouter({
             onError?.(finalError);
             throw finalError;
         },
-        [defaultModel, defaultSystemPrompt, onToken, onComplete, onError]
+        [defaultModel, defaultSystemPrompt, onToken, onThinking, onComplete, onError]
     );
 
     // =====================================================
@@ -483,6 +532,7 @@ export function useOpenRouter({
         error,
         abortStream,
         currentResponse,
+        currentThinking,
     };
 }
 

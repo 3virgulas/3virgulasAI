@@ -23,19 +23,9 @@ const EDGE_FUNCTION_URL = `${env.SUPABASE_URL}/functions/v1/chat-completion`;
 // =====================================================
 // Mantém apenas as últimas N mensagens do histórico (user/assistant)
 // para evitar confusão em conversas longas e economizar tokens
-const CONTEXT_WINDOW_SIZE = 10; // Últimas 10 mensagens (5 pares user/assistant)
+const CONTEXT_WINDOW_SIZE = 50; // 50 mensagens — sweet spot qualidade/custo
 
-// =====================================================
-// Stop Sequences - Anti-Loop Protection
-// =====================================================
-// Frases que forçam a IA a parar, evitando loops de conclusão repetitiva
-const STOP_SEQUENCES = [
-    'Você gostaria de saber mais',
-    'Posso ajudar com algo mais',
-    'Tem mais alguma dúvida',
-    'Gostaria de mais informações',
-    'Precisa de mais detalhes',
-];
+// Stop Sequences removidas — o system prompt v4 controla o encerramento.
 
 export interface StreamOptions {
     apiKey: string;
@@ -75,10 +65,12 @@ export async function streamOpenRouterResponse({
 
     const modelConfig: ModelConfig = {
         model,
-        temperature: 0.65,
-        max_tokens: 8096,
-        top_p: 0.85,
-        stop: STOP_SEQUENCES,
+        temperature: 0.85,
+        max_tokens: 32768,
+        top_p: 0.90,
+        stop: [],
+        frequency_penalty: 0.3,
+        presence_penalty: 0.15,
     };
 
     try {
@@ -193,10 +185,12 @@ export async function fetchOpenRouterResponse({
             model,
             messages: recentMessages,
             system_prompt: systemPrompt,
-            temperature: 0.65,
-            max_tokens: 8096,
-            top_p: 0.85,
-            stop: STOP_SEQUENCES,
+            temperature: 0.85,
+            max_tokens: 32768,
+            top_p: 0.90,
+            stop: [],
+            frequency_penalty: 0.3,
+            presence_penalty: 0.15,
             stream: false,
         }),
     });

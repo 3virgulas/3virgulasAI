@@ -14,6 +14,7 @@ import { useAppSettings } from '../hooks/useAppSettings';
 import { useSubscription } from '../hooks/useSubscription';
 import { useMemory } from '../hooks/useMemory';
 import { useRAG } from '../hooks/useRAG';
+import { useFollowups } from '../hooks/useFollowups';
 import { generateChatTitle } from '../lib/openrouter';
 import { supabase } from '../lib/supabase';
 import { env } from '../config/env';
@@ -73,8 +74,10 @@ export function ChatPage() {
     const { getSettings, getPremiumSettings, refreshSettings } = useAppSettings();
 
     // Hook de assinatura Premium
-    // Hook de assinatura Premium
     const { isPremium, loading: isLoadingSubscription } = useSubscription(user?.id);
+
+    // Hook de Acompanhamentos (Follow-ups) do Skynet
+    const { generateFollowups, followups, isLoadingFollowups, clearFollowups } = useFollowups();
 
     // Hook de memória persistente (Level 2)
     const { saveMemory } = useMemory({
@@ -98,13 +101,14 @@ export function ChatPage() {
         isReconnecting,
         reconnectAttempt,
         abortStream,
+        currentThinking,
     } = useOpenRouter({
         apiKey: env.OPENROUTER_API_KEY,
         onToken: (token) => {
             streamingContentRef.current += token;
             updateStreamingContent(streamingContentRef.current);
         },
-        onComplete: async (fullResponse) => {
+        onComplete: async (fullResponse, thinkingContent) => {
             const chatId = activeChatIdRef.current;
 
             if (chatId) {
@@ -112,6 +116,10 @@ export function ChatPage() {
             }
 
             streamingContentRef.current = '';
+
+            if (thinkingContent) {
+                console.log(`[Thinking] 💡 ${thinkingContent.length} chars de raciocínio interno`);
+            }
 
             // RAG Level 3: embeddar user message + resposta da IA (fire-and-forget)
             const lastUserMsg = messages
@@ -126,6 +134,11 @@ export function ChatPage() {
                     ],
                     chatId
                 );
+            }
+
+            // Geração de perguntas de "Acompanhamentos" (assíncrono fire-and-forget)
+            if (lastUserMsg?.content && fullResponse) {
+                generateFollowups(lastUserMsg.content, fullResponse);
             }
 
             const persistedMessages = messages.filter((m) => !m.id.startsWith('streaming-'));
@@ -195,6 +208,8 @@ export function ChatPage() {
     // =====================================================
     const handleSendMessage = useCallback(
         async (content: string, imageBase64?: string, parsedFile?: import('../lib/fileParser').ParsedFile) => {
+            // Limpa chips de follow-up imediatamente ao iniciar novo prompt
+            clearFollowups();
             // INTERCEPTOR: Se não estiver logado, salvar mensagem e pedir login
             if (!user) {
                 // Salvar mensagem pendente
@@ -467,9 +482,15 @@ export function ChatPage() {
                     isAnalyzingImage={isAnalyzing || isAnalyzingImage}
                     isReconnecting={isReconnecting}
                     reconnectAttempt={reconnectAttempt}
-
                     isPremium={isPremium}
                     isDeepResearching={isSearchingWeb}
+                    currentThinking={currentThinking}
+                    followups={followups}
+                    isLoadingFollowups={isLoadingFollowups}
+                    onFollowupSelect={(q) => {
+                        // Quando clica em um "Acompanhamento", envia como nova mensagem
+                        handleSendMessage(q);
+                    }}
                 />
 
                 {/* ChatInput com padding extra para safe area no mobile */}
