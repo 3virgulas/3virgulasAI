@@ -34,8 +34,11 @@ const RETRY_DELAYS = [2000, 5000, 10000]; // 2s, 5s, 10s — backoff mais genero
 const RETRYABLE_STATUS_CODES = [408, 429, 500, 502, 503, 504];
 const REQUEST_TIMEOUT_MS = 60000; // 60s — modelos 405B têm latência maior
 
-// Sliding Context Window — mantém apenas as últimas N mensagens
-const CONTEXT_WINDOW_SIZE = 10;
+// Sliding Context Window — mantém as últimas N mensagens
+// Hermes-4-405B suporta 128K tokens de contexto
+// 100 mensagens ≈ 20-30K tokens (bem dentro do limite)
+const CONTEXT_WINDOW_SIZE = 100;
+
 
 // Stop Sequences — evita loops e conclusões repetitivas
 const STOP_SEQUENCES = [

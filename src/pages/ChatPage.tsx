@@ -12,6 +12,7 @@ import { useMessages } from '../hooks/useMessages';
 import { useOpenRouter } from '../hooks/useOpenRouter';
 import { useAppSettings } from '../hooks/useAppSettings';
 import { useSubscription } from '../hooks/useSubscription';
+import { useMemory } from '../hooks/useMemory';
 import { generateChatTitle } from '../lib/openrouter';
 import { supabase } from '../lib/supabase';
 import { env } from '../config/env';
@@ -74,6 +75,11 @@ export function ChatPage() {
     // Hook de assinatura Premium
     const { isPremium, loading: isLoadingSubscription } = useSubscription(user?.id);
 
+    // Hook de memória persistente
+    const { saveMemory } = useMemory({
+        onMemorySaved: () => console.log('[Memory] 🧠 Memória da conversa salva!'),
+    });
+
     useEffect(() => {
         activeChatIdRef.current = currentChatId;
     }, [currentChatId]);
@@ -120,15 +126,29 @@ export function ChatPage() {
     const isAdmin = user?.email === ADMIN_EMAIL;
 
     const handleNewChat = useCallback(async () => {
+        // Salvar memória da conversa atual antes de abrir nova (silencioso)
+        if (messages.length >= 6) {
+            const apiMessages = messages
+                .filter(m => !m.id.startsWith('streaming-'))
+                .map(m => ({ role: m.role, content: m.content }));
+            saveMemory(apiMessages);
+        }
         const newChat = await createChat();
         if (newChat) {
             setCurrentChatId(newChat.id);
         }
-    }, [createChat]);
+    }, [createChat, messages, saveMemory]);
 
     const handleSelectChat = useCallback((chatId: string) => {
+        // Salvar memória da conversa atual antes de trocar (silencioso)
+        if (chatId !== currentChatId && messages.length >= 6) {
+            const apiMessages = messages
+                .filter(m => !m.id.startsWith('streaming-'))
+                .map(m => ({ role: m.role, content: m.content }));
+            saveMemory(apiMessages);
+        }
         setCurrentChatId(chatId);
-    }, []);
+    }, [currentChatId, messages, saveMemory]);
 
     const handleDeleteChat = useCallback(
         async (chatId: string) => {
