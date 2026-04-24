@@ -15,7 +15,11 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 
 const VENICE_MODEL = 'venice-uncensored-1-2'
-const VENICE_VISION_MODEL = 'qwen3-vl-235b-a22b' // 235B MoE — default_vision, OCR, reconhecimento de figuras públicas
+const VENICE_VISION_MODEL = 'qwen3-vl-235b-a22b'   // 235B MoE — default_vision, OCR, reconhecimento de figuras públicas
+// Fallbacks de visão: ativados imediatamente se o modelo primário retornar 429 (sem sleep — evita timeout do edge)
+// venice-uncensored-1-2 suporta visão nativamente (supportsVision: true) e é o nosso modelo texto principal
+// qwen3-5-9b: 9B denso, 256K ctx, barato, confiável, supportsVision: true
+const VENICE_VISION_FALLBACKS = ['venice-uncensored-1-2', 'qwen3-5-9b']
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -280,13 +284,22 @@ serve(async (req) => {
 
         console.log(`🚀 Venice AI: ${activeModel} | msgs=${userMessages.length} | stream=${isStreaming} | vision=${hasImages} | mem=${userMemory ? '✓' : '✗'} | rag=${semanticMemories ? '✓' : '✗'}`)
 
-        // Retry com backoff para 429 (modelo sobrecarregado) — especialmente relevante para visão
-        // Venice qwen3-vl-235b-a22b é um modelo 235B e pode retornar 429 "model overloaded"
-        const VISION_RETRY_DELAYS = [3000, 7000, 15000] // 3s, 7s, 15s
+        // Estratégia de fallback para 429 (modelo sobrecarregado)
+        // Ao invés de sleeps (que causam timeout no edge function), troca imediatamente para modelo menor
+        // Ordem: qwen3-vl-235b-a22b → venice-uncensored-1-2 → qwen3-5-9b
+        const visionModelQueue = hasImages
+            ? [activeModel, ...VENICE_VISION_FALLBACKS]
+            : [activeModel]
         let veniceResponse: Response | null = null
         let lastVeniceError = ''
+        let usedModel = activeModel
 
-        for (let attempt = 0; attempt <= VISION_RETRY_DELAYS.length; attempt++) {
+        for (let i = 0; i < visionModelQueue.length; i++) {
+            const modelToUse = visionModelQueue[i]
+            if (modelToUse !== activeModel) {
+                console.warn(`⚠️ Venice 429 — trocando para fallback: ${modelToUse}`)
+            }
+
             const resp = await fetch(VENICE_API_URL, {
                 method: 'POST',
                 headers: {
@@ -294,7 +307,7 @@ serve(async (req) => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    model: activeModel,
+                    model: modelToUse,
                     messages: finalMessages,
                     stream: isStreaming,
                     temperature: typeof temperature === 'number' ? temperature : 0.85,
@@ -308,34 +321,32 @@ serve(async (req) => {
 
             if (resp.ok) {
                 veniceResponse = resp
+                usedModel = modelToUse
                 break
             }
 
             const errorText = await resp.text()
             lastVeniceError = errorText
-            console.error(`❌ Erro Venice AI [${resp.status}] (tentativa ${attempt + 1}):`, errorText)
+            console.error(`❌ Erro Venice AI [${resp.status}] (${modelToUse}):`, errorText)
 
-            // 429: modelo sobrecarregado — retenta com backoff
-            if (resp.status === 429 && attempt < VISION_RETRY_DELAYS.length) {
-                const waitMs = VISION_RETRY_DELAYS[attempt]
-                console.warn(`⚠️ Venice 429 — aguardando ${waitMs}ms antes de retentar...`)
-                await new Promise(resolve => setTimeout(resolve, waitMs))
+            // 429: tenta próximo modelo do fallback sem esperar
+            if (resp.status === 429 && i < visionModelQueue.length - 1) {
                 continue
             }
 
-            // Outros erros: falha imediata
+            // Outros erros ou sem mais fallbacks: falha imediata
             if (resp.status === 401) throw new Error('API Key da Venice AI inválida ou expirada.')
             if (resp.status === 503) throw new Error('Serviço Venice AI temporariamente indisponível.')
             throw new Error(`Erro ${resp.status}: ${errorText.substring(0, 200)}`)
         }
 
         if (!veniceResponse) {
-            throw new Error(`Venice AI sobrecarregada após ${VISION_RETRY_DELAYS.length + 1} tentativas. Tente novamente em instantes. (${lastVeniceError.substring(0, 100)})`)
+            throw new Error(`Todos os modelos de visão estão sobrecarregados. Tente novamente em instantes. (${lastVeniceError.substring(0, 100)})`)
         }
 
         const response = veniceResponse
 
-        console.log(`✅ Resposta iniciada: ${activeModel} | stream=${isStreaming}`)
+        console.log(`✅ Resposta iniciada: ${usedModel}${usedModel !== activeModel ? ` (fallback de ${activeModel})` : ''} | stream=${isStreaming}`)
 
         // Resposta não-streaming (vision proxy, geração de título): retorna JSON diretamente
         if (!isStreaming) {
