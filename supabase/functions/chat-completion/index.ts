@@ -115,7 +115,8 @@ function formatMemoryBlock(rawMemory: string): string {
 async function fetchSemanticMemories(
     supabaseAdmin: ReturnType<typeof createClient>,
     userId: string,
-    queryText: string
+    queryText: string,
+    chatId: string | null = null
 ): Promise<string | null> {
     try {
         // Gerar embedding para a query atual usando gte-small (384 dims)
@@ -132,6 +133,7 @@ async function fetchSemanticMemories(
             match_user_id: userId,
             match_threshold: 0.65,
             match_count: 10,
+            match_chat_id: chatId ?? null,
         })
 
         if (error || !memories || memories.length === 0) return null
@@ -193,7 +195,7 @@ serve(async (req) => {
         }
 
         const body = await req.json()
-        const { messages, system_prompt, max_tokens, temperature } = body
+        const { messages, system_prompt, max_tokens, temperature, chat_id } = body
 
         // stream: respeita o que o cliente pede (false para vision/título, true para chat)
         const isStreaming = body.stream !== false
@@ -248,7 +250,7 @@ serve(async (req) => {
                     const [memory, rag] = await Promise.allSettled([
                         fetchUserMemory(supabaseAdmin, user.id),
                         lastUserText
-                            ? fetchSemanticMemories(supabaseAdmin, user.id, lastUserText)
+                            ? fetchSemanticMemories(supabaseAdmin, user.id, lastUserText, chat_id ?? null)
                             : Promise.resolve(null),
                     ])
 
@@ -278,36 +280,60 @@ serve(async (req) => {
 
         console.log(`🚀 Venice AI: ${activeModel} | msgs=${userMessages.length} | stream=${isStreaming} | vision=${hasImages} | mem=${userMemory ? '✓' : '✗'} | rag=${semanticMemories ? '✓' : '✗'}`)
 
-        const response = await fetch(VENICE_API_URL, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${VENICE_API_KEY}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                model: activeModel,
-                messages: finalMessages,
-                stream: isStreaming,
-                temperature: typeof temperature === 'number' ? temperature : 0.85,
-                max_tokens: typeof max_tokens === 'number' ? max_tokens : (hasImages ? 16384 : 65536),
-                top_p: typeof body.top_p === 'number' ? body.top_p : 0.95,
-                // IMPORTANTE: frequency_penalty e presence_penalty REMOVIDOS
-                // Eles causavam respostas vagas e saltos de tópico.
-                // Venice Uncensored 1.2 performa melhor sem essas restrições.
-                venice_parameters: {
-                    include_venice_system_prompt: false,
-                },
-            })
-        })
+        // Retry com backoff para 429 (modelo sobrecarregado) — especialmente relevante para visão
+        // Venice qwen3-vl-235b-a22b é um modelo 235B e pode retornar 429 "model overloaded"
+        const VISION_RETRY_DELAYS = [3000, 7000, 15000] // 3s, 7s, 15s
+        let veniceResponse: Response | null = null
+        let lastVeniceError = ''
 
-        if (!response.ok) {
-            const errorText = await response.text()
-            console.error(`❌ Erro Venice AI [${response.status}]:`, errorText)
-            if (response.status === 401) throw new Error('API Key da Venice AI inválida ou expirada.')
-            if (response.status === 429) throw new Error('Limite de requisições atingido. Tente novamente.')
-            if (response.status === 503) throw new Error('Serviço Venice AI temporariamente indisponível.')
-            throw new Error(`Erro ${response.status}: ${errorText.substring(0, 200)}`)
+        for (let attempt = 0; attempt <= VISION_RETRY_DELAYS.length; attempt++) {
+            const resp = await fetch(VENICE_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${VENICE_API_KEY}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    model: activeModel,
+                    messages: finalMessages,
+                    stream: isStreaming,
+                    temperature: typeof temperature === 'number' ? temperature : 0.85,
+                    max_tokens: typeof max_tokens === 'number' ? max_tokens : (hasImages ? 16384 : 65536),
+                    top_p: typeof body.top_p === 'number' ? body.top_p : 0.95,
+                    venice_parameters: {
+                        include_venice_system_prompt: false,
+                    },
+                })
+            })
+
+            if (resp.ok) {
+                veniceResponse = resp
+                break
+            }
+
+            const errorText = await resp.text()
+            lastVeniceError = errorText
+            console.error(`❌ Erro Venice AI [${resp.status}] (tentativa ${attempt + 1}):`, errorText)
+
+            // 429: modelo sobrecarregado — retenta com backoff
+            if (resp.status === 429 && attempt < VISION_RETRY_DELAYS.length) {
+                const waitMs = VISION_RETRY_DELAYS[attempt]
+                console.warn(`⚠️ Venice 429 — aguardando ${waitMs}ms antes de retentar...`)
+                await new Promise(resolve => setTimeout(resolve, waitMs))
+                continue
+            }
+
+            // Outros erros: falha imediata
+            if (resp.status === 401) throw new Error('API Key da Venice AI inválida ou expirada.')
+            if (resp.status === 503) throw new Error('Serviço Venice AI temporariamente indisponível.')
+            throw new Error(`Erro ${resp.status}: ${errorText.substring(0, 200)}`)
         }
+
+        if (!veniceResponse) {
+            throw new Error(`Venice AI sobrecarregada após ${VISION_RETRY_DELAYS.length + 1} tentativas. Tente novamente em instantes. (${lastVeniceError.substring(0, 100)})`)
+        }
+
+        const response = veniceResponse
 
         console.log(`✅ Resposta iniciada: ${activeModel} | stream=${isStreaming}`)
 

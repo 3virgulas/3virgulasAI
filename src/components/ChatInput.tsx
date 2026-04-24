@@ -287,14 +287,14 @@ export function ChatInput({
                                 disabled={disabled || isStreaming}
                                 className={`p-2 rounded-lg transition-all flex items-center gap-2 
                                     ${isWebSearchEnabled
-                                        ? 'text-green-500 bg-green-500/10 hover:bg-green-500/20'
+                                        ? 'text-slate-400 bg-slate-700/30 hover:bg-slate-700/50'
                                         : 'text-zinc-400 hover:text-white hover:bg-white/5'
                                     }`}
                                 title={isWebSearchEnabled ? "Desativar Deep Research" : "Ativar Deep Research (Apenas Prometheus)"}
                             >
                                 <Globe className={`w-5 h-5 ${isWebSearchEnabled ? 'animate-pulse' : ''}`} />
                                 {isWebSearchEnabled && (
-                                    <span className="text-xs font-mono font-bold hidden md:inline text-green-500 animate-in fade-in slide-in-from-left-2">
+                                    <span className="text-xs font-mono font-bold hidden md:inline text-slate-400 animate-in fade-in slide-in-from-left-2">
                                         WEB ON
                                     </span>
                                 )}

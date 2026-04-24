@@ -136,13 +136,13 @@ export function MessageList({
             {/* Deep Research Status */}
             {isDeepResearching && !isAnalyzingImage && (
                 <div className="flex items-start gap-3 animate-in">
-                    <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 mt-1 bg-green-500/10 flex items-center justify-center">
-                        <div className="w-full h-full flex items-center justify-center bg-green-500/20 animate-pulse">
-                            <Globe className="w-5 h-5 text-green-500 animate-pulse" />
+                    <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 mt-1 bg-slate-700/20 flex items-center justify-center">
+                        <div className="w-full h-full flex items-center justify-center bg-slate-700/30 animate-pulse">
+                            <Globe className="w-5 h-5 text-slate-500 animate-pulse" />
                         </div>
                     </div>
                     <div className="py-1">
-                        <div className="flex items-center gap-2 font-mono text-sm text-green-500">
+                        <div className="flex items-center gap-2 font-mono text-sm text-slate-500">
                             <span className="animate-pulse">&gt;</span>
                             <span className="animate-pulse">DEEP_RESEARCH_PROTOCOL</span>
                             <span className="animate-pulse">...</span>
@@ -217,6 +217,28 @@ interface MessageBubbleProps {
 }
 
 // OPTIMIZATION: Memoized component - only re-renders when props change
+// Extrai conteúdo para exibição amigável a partir do finalContent armazenado no banco.
+// O banco agora guarda o finalContent completo (com [SYSTEM INFO:...] ou [CONTEXTO DO ARQUIVO...])
+// para que a API sempre veja o contexto visual/documental em turnos futuros.
+function parseDisplayContent(content: string): { display: string; isImage: boolean; isDocument: boolean } {
+    // Mensagem de imagem: "[SYSTEM INFO: ...Visual Description...] \n\nUser Question: \"...\""
+    if (content.startsWith('[SYSTEM INFO:') && content.includes('User Question:')) {
+        const match = content.match(/User Question:\s*"([\s\S]*?)"\s*$/);
+        const question = match?.[1]?.trim() || '[Imagem anexada]';
+        return { display: `📷 ${question}`, isImage: true, isDocument: false };
+    }
+    // Mensagem de documento: "[CONTEXTO DO ARQUIVO 'nome']..."
+    if (content.startsWith('[CONTEXTO DO ARQUIVO')) {
+        const fileMatch = content.match(/\[CONTEXTO DO ARQUIVO '(.+?)'\]/);
+        const fileName = fileMatch?.[1] || 'arquivo';
+        const questionMatch = content.match(/Pergunta do usuário:\s*([\s\S]+)$/);
+        const question = questionMatch?.[1]?.trim() || '';
+        return { display: `📄 ${fileName}${question ? `\n${question}` : ''}`, isImage: false, isDocument: true };
+    }
+    // Mensagem normal (texto / deep research)
+    return { display: content, isImage: false, isDocument: false };
+}
+
 const MessageBubble = React.memo(function MessageBubble({
     message,
     isStreamingMessage = false,
@@ -229,7 +251,8 @@ const MessageBubble = React.memo(function MessageBubble({
 }: MessageBubbleProps) {
     const isUser = message.role === 'user';
     const isEmpty = !message.content || message.content.trim() === '';
-    const hasImage = message.content.startsWith('📷');
+    const { display: displayContent, isImage, isDocument } = parseDisplayContent(message.content);
+    const hasImage = isImage || isDocument;
 
     return (
         <div
@@ -251,7 +274,7 @@ const MessageBubble = React.memo(function MessageBubble({
                 )}
                 {isUser ? (
                     <div className={`whitespace-pre-wrap break-words text-sm leading-relaxed ${hasImage ? 'text-matrix-primary' : ''}`}>
-                        {message.content}
+                        {displayContent}
                     </div>
                 ) : isEmpty && isStreamingMessage ? (
                     <div className="flex items-center">

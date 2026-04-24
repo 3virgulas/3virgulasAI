@@ -71,6 +71,12 @@ export function ChatPage() {
         isStreaming: messagesStreaming,
     } = useMessages(currentChatId);
 
+    // Ref sempre atualizada para evitar stale closure dentro de onComplete
+    const messagesRef = useRef(messages);
+    useEffect(() => {
+        messagesRef.current = messages;
+    });
+
     const { getSettings, getPremiumSettings, refreshSettings } = useAppSettings();
 
     // Hook de assinatura Premium
@@ -122,7 +128,7 @@ export function ChatPage() {
             }
 
             // RAG Level 3: embeddar user message + resposta da IA (fire-and-forget)
-            const lastUserMsg = messages
+            const lastUserMsg = messagesRef.current
                 .filter(m => m.role === 'user' && !m.id.startsWith('streaming-'))
                 .slice(-1)[0];
 
@@ -141,7 +147,7 @@ export function ChatPage() {
                 generateFollowups(lastUserMsg.content, fullResponse);
             }
 
-            const persistedMessages = messages.filter((m) => !m.id.startsWith('streaming-'));
+            const persistedMessages = messagesRef.current.filter((m) => !m.id.startsWith('streaming-'));
             if (persistedMessages.length === 1 && chatId) {
                 await autoGenerateTitle(chatId, persistedMessages[0].content);
             }
@@ -292,6 +298,10 @@ export function ChatPage() {
             // ===== VISION PROXY FLOW (Images) =====
             // ===== DOCUMENT PROCESSING FLOW (PDF, DOCX, etc) =====
             let finalContent = content;
+            // Contexto visual injetado como system temporário (não salvo no banco).
+            // Modelos Venice seguem a spec OpenAI: instruções de contexto pertencem ao
+            // role system, não ao role user — garante maior aderência e fidelidade.
+            let visualSystemContext: string | null = null;
 
             if (imageBase64) {
                 try {
@@ -300,9 +310,11 @@ export function ChatPage() {
                     // Fase 1: Modelo de Visão analisa a imagem
                     const visualDescription = await analyzeImage(imageBase64, vision_model);
 
-                    // Fase 2: Formatar mensagem para IA principal
+                    // Fase 2: descrição visual → system temporário; user recebe só a pergunta
                     if (visualDescription) {
-                        finalContent = `[SYSTEM INFO: The user attached an image. Visual Description: "${visualDescription}"]\n\nUser Question: "${content || 'Descreva esta imagem'}"`;
+                        visualSystemContext = `[CONTEXTO VISUAL — apenas para este turno]\nO usuário anexou uma imagem. Descrição detalhada gerada pelo modelo de visão:\n\n"${visualDescription}"\n\nUse esta descrição para responder à pergunta do usuário. Não mencione que recebeu uma "descrição" — responda como se tivesse visto a imagem diretamente.`;
+                        // finalContent guarda apenas a pergunta (o que é salvo no banco)
+                        finalContent = content || 'Descreva esta imagem';
                     }
 
                     setIsAnalyzing(false);
@@ -317,20 +329,9 @@ export function ChatPage() {
                 finalContent = formatFileContentForAI(parsedFile, content);
             }
 
-            // Injetar contexto de pesquisa (Deep Research)
-            if (searchContext) {
-                finalContent += `\n\n${searchContext}`;
-            }
-
-            // Salvar mensagem do usuário (com ícone apropriado)
-            let displayContent = content;
-            if (imageBase64) {
-                displayContent = `📷 ${content || '[Imagem anexada]'}`;
-            } else if (parsedFile) {
-                displayContent = `📄 ${parsedFile.fileName}${content ? `\n${content}` : ''}`;
-            }
-
-            const userMessage = await addUserMessage(displayContent, activeChatId);
+            // Salvar mensagem do usuário com finalContent limpo (sem contexto de pesquisa)
+            // searchContext é injetado apenas no apiMessages abaixo, nunca persistido no banco.
+            const userMessage = await addUserMessage(finalContent, activeChatId);
             if (!userMessage) {
                 console.error('Falha ao salvar mensagem do usuário');
                 return;
@@ -347,10 +348,22 @@ export function ChatPage() {
                 content: msg.content,
             }));
 
-            // Adicionar a mensagem atual (com descrição visual ou conteúdo do documento)
+            // Adicionar a mensagem atual (com conteúdo do documento / busca / pergunta)
+            // Para imagens: injetar system temporário antes do user com a descrição visual
+            if (visualSystemContext) {
+                apiMessages.push({
+                    role: 'system' as const,
+                    content: visualSystemContext,
+                });
+            }
+
             apiMessages.push({
                 role: 'user' as const,
-                content: finalContent,
+                // searchContext injetado aqui: vai para a API mas nunca é salvo no banco
+                // Assim a mensagem exibida ao usuário fica limpa (apenas sua pergunta original)
+                content: searchContext
+                    ? `${finalContent}\n\n${searchContext}`
+                    : finalContent,
             });
 
             try {
@@ -358,6 +371,7 @@ export function ChatPage() {
                     model: selected_model,
                     systemPrompt: system_instruction,
                     isPremium, // Ativa modo detalhado para Premium
+                    chatId: activeChatId, // Escopo RAG: busca semântica apenas neste chat
                 });
             } catch (error) {
                 console.error('Erro ao enviar mensagem:', error);

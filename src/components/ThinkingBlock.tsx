@@ -50,33 +50,33 @@ export function ThinkingBlock({ thinking, isStreaming }: ThinkingBlockProps) {
     const wordCount = thinking.trim().split(/\s+/).filter(Boolean).length;
 
     return (
-        <div className="mb-3 rounded-xl border border-violet-500/25 bg-violet-950/20 overflow-hidden transition-all duration-300">
+        <div className="mb-3 overflow-hidden transition-all duration-300">
             {/* Header — clicável */}
             <button
                 onClick={() => setIsOpen(prev => !prev)}
-                className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left hover:bg-violet-500/10 transition-colors duration-200 group"
+                className="w-full flex items-center gap-2 px-1 py-1.5 text-left transition-colors duration-200 group"
             >
                 {/* Ícone com pulso durante streaming */}
-                <div className={`w-5 h-5 flex-shrink-0 ${isStreaming ? 'animate-pulse' : ''}`}>
-                    <Brain className="w-5 h-5 text-violet-400" />
+                <div className={`w-4 h-4 flex-shrink-0 ${isStreaming ? 'animate-pulse' : ''}`}>
+                    <Brain className="w-4 h-4 text-slate-500" />
                 </div>
 
                 {/* Label + contagem */}
                 <div className="flex-1 min-w-0">
                     {isStreaming ? (
-                        <span className="text-xs font-mono text-violet-400 flex items-center gap-1.5">
+                        <span className="text-xs font-mono text-slate-500 flex items-center gap-1.5">
                             <span className="animate-pulse">Raciocinando</span>
                             <span className="flex gap-0.5">
-                                <span className="w-1 h-1 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                                <span className="w-1 h-1 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                                <span className="w-1 h-1 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                                <span className="w-1 h-1 rounded-full bg-slate-500 animate-bounce" style={{ animationDelay: '0ms' }} />
+                                <span className="w-1 h-1 rounded-full bg-slate-500 animate-bounce" style={{ animationDelay: '150ms' }} />
+                                <span className="w-1 h-1 rounded-full bg-slate-500 animate-bounce" style={{ animationDelay: '300ms' }} />
                             </span>
                         </span>
                     ) : (
-                        <span className="text-xs font-mono text-violet-400">
-                            🧠 Ver raciocínio
+                        <span className="text-xs font-mono text-slate-500 group-hover:text-slate-400 transition-colors">
+                            Ver raciocínio
                             {wordCount > 0 && (
-                                <span className="ml-2 text-violet-500/70">
+                                <span className="ml-2 text-slate-600">
                                     {(() => {
                                         const stepCount = thinking.match(/\d+\.\s|Etapa|Step|Passo|INTENT|SCOPE|STRUCTURE|GAPS|DEEP INTENT|KNOWLEDGE|MULTI-ANGLE|ANTI-GAPS/gi)?.length ?? 0;
                                         return stepCount > 1 ? `${stepCount} etapas • ` : '';
@@ -89,7 +89,7 @@ export function ThinkingBlock({ thinking, isStreaming }: ThinkingBlockProps) {
 
                 {/* Chevron */}
                 {!isStreaming && (
-                    <div className="flex-shrink-0 text-violet-500/60 group-hover:text-violet-400 transition-colors">
+                    <div className="flex-shrink-0 text-slate-600 group-hover:text-slate-400 transition-colors">
                         {isOpen
                             ? <ChevronUp className="w-3.5 h-3.5" />
                             : <ChevronDown className="w-3.5 h-3.5" />
@@ -103,14 +103,14 @@ export function ThinkingBlock({ thinking, isStreaming }: ThinkingBlockProps) {
                 <div
                     ref={contentRef}
                     className={`
-                        px-3.5 pb-3 pt-0.5
+                        px-1 pb-3 pt-0.5
                         max-h-52 overflow-y-auto
-                        border-t border-violet-500/15
+                        border-t border-slate-700/30
                         ${isStreaming ? 'scroll-smooth' : ''}
                     `}
                     style={{ scrollBehavior: isStreaming ? 'smooth' : 'auto' }}
                 >
-                    <pre className="text-xs text-violet-300/70 font-mono whitespace-pre-wrap break-words leading-relaxed mt-2">
+                    <pre className="text-xs text-slate-600 font-mono whitespace-pre-wrap break-words leading-relaxed mt-2">
                         {thinking || '…'}
                     </pre>
                 </div>

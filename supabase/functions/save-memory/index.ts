@@ -113,8 +113,12 @@ serve(async (req) => {
 
     if (existingMemory) {
       extractionMessages.push({
-        role: 'system',
+        role: 'user',
         content: `Memória prévia do usuário (faça MERGE com as novas informações):\n${existingMemory}`
+      })
+      extractionMessages.push({
+        role: 'assistant',
+        content: 'Entendido. Usarei a memória prévia como base e farei merge com as novas informações extraídas.'
       })
     }
 
@@ -134,8 +138,9 @@ serve(async (req) => {
         messages: extractionMessages,
         stream: false,
         temperature: 0.2,    // Baixa temperatura para extração factual precisa
-        max_tokens: 600,
-      })
+        max_tokens: 600,        venice_parameters: {
+          include_venice_system_prompt: false,
+        },      })
     })
 
     if (!nousResponse.ok) {
@@ -150,12 +155,124 @@ serve(async (req) => {
       throw new Error('Resposta vazia do extrator de memória')
     }
 
-    // 6. Salvar no banco
+    // 6. Validar schema + merge atômico campo-a-campo
+    // ─── Schema esperado ──────────────────────────────────────────────────────
+    interface MemorySchema {
+      nome?: string | null
+      profissao?: string | null
+      interesses?: string[]
+      projetos?: string[]
+      preferencias?: string[]
+      contexto_geral?: string | null
+    }
+
+    const ALLOWED_KEYS: (keyof MemorySchema)[] = [
+      'nome', 'profissao', 'interesses', 'projetos', 'preferencias', 'contexto_geral',
+    ]
+
+    function isStringOrNull(v: unknown): v is string | null {
+      return v === null || typeof v === 'string'
+    }
+
+    function isStringArray(v: unknown): v is string[] {
+      return Array.isArray(v) && v.every(i => typeof i === 'string')
+    }
+
+    function validateSchema(obj: Record<string, unknown>): MemorySchema | null {
+      // Rejeita qualquer chave fora do schema esperado
+      const keys = Object.keys(obj)
+      const hasUnknownKeys = keys.some(k => !ALLOWED_KEYS.includes(k as keyof MemorySchema))
+      if (hasUnknownKeys) {
+        console.warn('⚠️ LLM retornou chaves desconhecidas:', keys.filter(k => !ALLOWED_KEYS.includes(k as keyof MemorySchema)))
+        return null
+      }
+      // Valida tipos de cada campo
+      if ('nome' in obj && !isStringOrNull(obj.nome)) return null
+      if ('profissao' in obj && !isStringOrNull(obj.profissao)) return null
+      if ('contexto_geral' in obj && !isStringOrNull(obj.contexto_geral)) return null
+      if ('interesses' in obj && !isStringArray(obj.interesses)) return null
+      if ('projetos' in obj && !isStringArray(obj.projetos)) return null
+      if ('preferencias' in obj && !isStringArray(obj.preferencias)) return null
+      return obj as MemorySchema
+    }
+
+    // ─── Parse ────────────────────────────────────────────────────────────────
+    let newMemory: MemorySchema | null = null
+    try {
+      // Remove blocos ```json ... ``` se o modelo os incluiu por engano
+      const cleaned = rawMemory.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
+      const parsed = JSON.parse(cleaned)
+      if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+        newMemory = validateSchema(parsed as Record<string, unknown>)
+      }
+    } catch {
+      console.warn('⚠️ JSON inválido retornado pelo LLM — mantendo memória anterior')
+    }
+
+    if (!newMemory) {
+      // Fallback: mantém a memória existente intacta
+      console.warn('⚠️ Schema inválido — abortando atualização de memória')
+      return new Response(
+        JSON.stringify({ success: false, reason: 'invalid_schema', kept: existingMemory }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // ─── Merge campo-a-campo ──────────────────────────────────────────────────
+    // Regra: campo existente NÃO é sobrescrito por null / array vazio
+    let existingParsed: MemorySchema = {}
+    if (existingMemory) {
+      try {
+        const p = JSON.parse(existingMemory)
+        if (typeof p === 'object' && p !== null) existingParsed = p as MemorySchema
+      } catch { /* existingMemory era texto raw — ignorar */ }
+    }
+
+    function mergeString(
+      incoming: string | null | undefined,
+      existing: string | null | undefined
+    ): string | null {
+      if (incoming && incoming.trim().length > 0) return incoming.trim()
+      if (existing && existing.trim().length > 0) return existing.trim()
+      return null
+    }
+
+    function mergeArray(
+      incoming: string[] | undefined,
+      existing: string[] | undefined
+    ): string[] {
+      const base = existing ?? []
+      const next = incoming ?? []
+      if (next.length === 0) return base
+      // Une listas eliminando duplicatas (case-insensitive)
+      const combined = [...base]
+      for (const item of next) {
+        if (!combined.some(e => e.toLowerCase() === item.toLowerCase())) {
+          combined.push(item)
+        }
+      }
+      return combined
+    }
+
+    const mergedMemory: MemorySchema = {
+      nome: mergeString(newMemory.nome, existingParsed.nome),
+      profissao: mergeString(newMemory.profissao, existingParsed.profissao),
+      contexto_geral: mergeString(newMemory.contexto_geral, existingParsed.contexto_geral),
+      interesses: mergeArray(newMemory.interesses, existingParsed.interesses),
+      projetos: mergeArray(newMemory.projetos, existingParsed.projetos),
+      preferencias: mergeArray(newMemory.preferencias, existingParsed.preferencias),
+    }
+
+    const finalMemory = JSON.stringify(mergedMemory)
+
+    console.log(`🔀 Merge concluído — nome=${mergedMemory.nome ?? 'N/A'} | interesses=${mergedMemory.interesses?.length ?? 0}`)
+
+    // 7. Salvar no banco
     const { error: updateError } = await supabaseAdmin
       .from('profiles')
       .upsert({
         id: user.id,
-        memory_summary: rawMemory,
+        memory_summary: finalMemory,
         memory_updated_at: new Date().toISOString(),
       })
 
@@ -166,7 +283,7 @@ serve(async (req) => {
     console.log(`✅ Memória salva para usuário ${user.id}`)
 
     return new Response(
-      JSON.stringify({ success: true, memory: rawMemory }),
+      JSON.stringify({ success: true, memory: finalMemory }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
