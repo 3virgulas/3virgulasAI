@@ -5,7 +5,7 @@ import { useAppSettings } from '../hooks/useAppSettings';
 import { supabase } from '../lib/supabase';
 import {
     Settings, Save, Loader2, ArrowLeft, Sparkles, Bot, ImageIcon, Eye, Cpu,
-    Crown, Users, Zap, RefreshCw, Plus, Minus, Check, Ban,
+    Crown, Users, RefreshCw, Plus, Minus, Check, Ban,
     Phone, Mail, Calendar, Hash, Trash2
 } from 'lucide-react';
 import type { Subscription } from '../types/subscription';
@@ -66,14 +66,14 @@ export function AdminPage() {
     const [activeTab, setActiveTab] = useState<TabId>('ai');
 
     // AI Config state
-    const [model, setModel] = useState('');
+    const [_model, setModel] = useState('');
     const [visionModel, setVisionModel] = useState('');
     const [systemPrompt, setSystemPrompt] = useState('');
     const [avatarUrl, setAvatarUrl] = useState('');
     const [avatarError, setAvatarError] = useState(false);
 
     // Premium Config state
-    const [premiumModel, setPremiumModel] = useState('');
+    const [_premiumModel, setPremiumModel] = useState('');
     const [premiumPrompt, setPremiumPrompt] = useState('');
 
     // Subscribers state
