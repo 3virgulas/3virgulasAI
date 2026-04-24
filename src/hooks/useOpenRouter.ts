@@ -193,6 +193,7 @@ export function useOpenRouter({
                 messages: visionMessages,
                 max_tokens: 2048,
                 stream: false,
+                is_vision: true, // flag explícita para garantir roteamento correto no edge function
             };
 
             let lastError: Error | null = null;

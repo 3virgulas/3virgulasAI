@@ -46,6 +46,9 @@ export function ChatPage() {
     const [showGuestModal, setShowGuestModal] = useState(false);
     const [isWebSearchEnabled, setIsWebSearchEnabled] = useState(false);
     const [isSearchingWeb, setIsSearchingWeb] = useState(false);
+    // Imagens associadas a mensagens — armazenadas localmente para exibição no chat
+    // (não vão ao banco — são apenas para UI deste session)
+    const [messageImages, setMessageImages] = useState<Record<string, string>>({});
 
     const streamingContentRef = useRef('');
     const activeChatIdRef = useRef<string | undefined>(currentChatId);
@@ -337,6 +340,11 @@ export function ChatPage() {
                 return;
             }
 
+            // Associar imagem à mensagem para exibição local (não vai ao banco)
+            if (imageBase64 && userMessage?.id) {
+                setMessageImages(prev => ({ ...prev, [userMessage.id]: imageBase64 }));
+            }
+
             // Iniciar streaming
             startStreaming(activeChatId);
             streamingContentRef.current = '';
@@ -501,6 +509,7 @@ export function ChatPage() {
                     currentThinking={currentThinking}
                     followups={followups}
                     isLoadingFollowups={isLoadingFollowups}
+                    messageImages={messageImages}
                     onFollowupSelect={(q) => {
                         // Quando clica em um "Acompanhamento", envia como nova mensagem
                         handleSendMessage(q);

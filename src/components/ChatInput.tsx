@@ -46,21 +46,43 @@ export function ChatInput({
     // =====================================================
     // File Processing
     // =====================================================
+    // Comprime imagem para max 1024px e JPEG 75% — mantém payload sob controle
+    const compressImage = (base64: string): Promise<string> =>
+        new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+                const MAX = 1024;
+                let { width, height } = img;
+                if (width > MAX || height > MAX) {
+                    if (width > height) { height = Math.round((height * MAX) / width); width = MAX; }
+                    else { width = Math.round((width * MAX) / height); height = MAX; }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', 0.75));
+            };
+            img.onerror = () => resolve(base64); // fallback sem compressão
+            img.src = base64;
+        });
+
     const processFile = async (file: File) => {
         setIsProcessingFile(true);
 
         try {
             if (file.type.startsWith('image/')) {
-                if (file.size > 10 * 1024 * 1024) {
-                    alert('Imagem muito grande. Máximo 10MB.');
+                if (file.size > 20 * 1024 * 1024) {
+                    alert('Imagem muito grande. Máximo 20MB.');
                     return;
                 }
 
                 const reader = new FileReader();
-                reader.onload = (event) => {
-                    const base64 = event.target?.result as string;
-                    setImagePreview(base64);
-                    setImageBase64(base64);
+                reader.onload = async (event) => {
+                    const raw = event.target?.result as string;
+                    const compressed = await compressImage(raw);
+                    setImagePreview(compressed);
+                    setImageBase64(compressed);
                 };
                 reader.readAsDataURL(file);
             } else if (isSupportedFileType(file)) {

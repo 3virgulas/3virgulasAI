@@ -32,6 +32,7 @@ interface MessageListProps {
     followups?: string[];
     isLoadingFollowups?: boolean;
     onFollowupSelect?: (question: string) => void;
+    messageImages?: Record<string, string>;
 }
 
 export function MessageList({
@@ -46,6 +47,7 @@ export function MessageList({
     followups = [],
     isLoadingFollowups = false,
     onFollowupSelect,
+    messageImages = {},
 }: MessageListProps) {
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -128,6 +130,7 @@ export function MessageList({
                     followups={followups}
                     isLoadingFollowups={isLoadingFollowups}
                     onFollowupSelect={onFollowupSelect}
+                    imageUrl={messageImages[message.id]}
                 />
             ))}
 
@@ -214,6 +217,7 @@ interface MessageBubbleProps {
     followups?: string[];
     isLoadingFollowups?: boolean;
     onFollowupSelect?: (q: string) => void;
+    imageUrl?: string;
 }
 
 // OPTIMIZATION: Memoized component - only re-renders when props change
@@ -248,6 +252,7 @@ const MessageBubble = React.memo(function MessageBubble({
     followups = [],
     isLoadingFollowups = false,
     onFollowupSelect,
+    imageUrl,
 }: MessageBubbleProps) {
     const isUser = message.role === 'user';
     const isEmpty = !message.content || message.content.trim() === '';
@@ -273,8 +278,20 @@ const MessageBubble = React.memo(function MessageBubble({
                     />
                 )}
                 {isUser ? (
-                    <div className={`whitespace-pre-wrap break-words text-sm leading-relaxed ${hasImage ? 'text-matrix-primary' : ''}`}>
-                        {displayContent}
+                    <div>
+                        {/* Thumbnail da imagem acima do texto — exibida apenas nesta sessão */}
+                        {imageUrl && (
+                            <div className="mb-2">
+                                <img
+                                    src={imageUrl}
+                                    alt="Imagem anexada"
+                                    className="max-h-48 max-w-full rounded-xl object-contain border border-zinc-600/50 shadow-lg"
+                                />
+                            </div>
+                        )}
+                        <div className={`whitespace-pre-wrap break-words text-sm leading-relaxed ${hasImage ? 'text-matrix-primary' : ''}`}>
+                            {displayContent}
+                        </div>
                     </div>
                 ) : isEmpty && isStreamingMessage ? (
                     <div className="flex items-center">

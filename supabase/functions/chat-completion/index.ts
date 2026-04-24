@@ -204,11 +204,14 @@ serve(async (req) => {
         // stream: respeita o que o cliente pede (false para vision/título, true para chat)
         const isStreaming = body.stream !== false
 
-        // Detectar se é requisição de visão (mensagem com image_url)
-        const hasImages = messages?.some((m: { role: string; content: unknown }) =>
-            Array.isArray(m.content) &&
-            (m.content as Array<{ type: string }>).some((c) => c.type === 'image_url')
-        )
+        // Detectar se é requisição de visão:
+        // 1. Flag explícita is_vision: true (mais confiável)
+        // 2. Mensagem com image_url no conteúdo (fallback)
+        const hasImages = body.is_vision === true ||
+            messages?.some((m: { role: string; content: unknown }) =>
+                Array.isArray(m.content) &&
+                (m.content as Array<{ type: string }>).some((c) => c.type === 'image_url')
+            )
 
         // Roteamento inteligente: texto → venice-uncensored-1-2 | imagem → qwen3-vl-235b-a22b
         // qwen3-vl-235b-a22b é o modelo default_vision da Venice: 235B MoE, OCR, reconhecimento de figuras públicas
