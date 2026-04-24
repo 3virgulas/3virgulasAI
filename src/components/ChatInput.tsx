@@ -2,8 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import { Square, X, Paperclip, Globe, ArrowUp, Loader2, FileText } from 'lucide-react';
 import { parseFile, isSupportedFileType, type ParsedFile } from '../lib/fileParser';
 
+const MAX_IMAGES = 5;
+
 interface ChatInputProps {
-    onSendMessage: (content: string, imageBase64?: string, parsedFile?: ParsedFile) => void;
+    onSendMessage: (content: string, imagesBase64?: string[], parsedFile?: ParsedFile) => void;
     onStop: () => void;
     isStreaming: boolean;
     disabled: boolean;
@@ -22,8 +24,7 @@ export function ChatInput({
     onToggleWebSearch,
 }: ChatInputProps) {
     const [content, setContent] = useState('');
-    const [imagePreview, setImagePreview] = useState<string | null>(null);
-    const [imageBase64, setImageBase64] = useState<string | null>(null);
+    const [images, setImages] = useState<string[]>([]);
     const [documentFile, setDocumentFile] = useState<ParsedFile | null>(null);
     const [isProcessingFile, setIsProcessingFile] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
@@ -81,8 +82,7 @@ export function ChatInput({
                 reader.onload = async (event) => {
                     const raw = event.target?.result as string;
                     const compressed = await compressImage(raw);
-                    setImagePreview(compressed);
-                    setImageBase64(compressed);
+                    setImages(prev => prev.length < MAX_IMAGES ? [...prev, compressed] : prev);
                 };
                 reader.readAsDataURL(file);
             } else if (isSupportedFileType(file)) {
@@ -107,9 +107,13 @@ export function ChatInput({
     };
 
     const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        await processFile(file);
+        const files = e.target.files;
+        if (!files) return;
+        const remaining = MAX_IMAGES - images.length;
+        const toProcess = Array.from(files).slice(0, remaining);
+        for (const file of toProcess) {
+            await processFile(file);
+        }
     };
 
     const handleFileClick = () => {
@@ -143,9 +147,13 @@ export function ChatInput({
         e.stopPropagation();
         setIsDragging(false);
 
-        const file = e.dataTransfer.files?.[0];
-        if (file) {
-            await processFile(file);
+        const files = e.dataTransfer.files;
+        if (files) {
+            const remaining = MAX_IMAGES - images.length;
+            const toProcess = Array.from(files).slice(0, remaining);
+            for (const file of toProcess) {
+                await processFile(file);
+            }
         }
     };
 
@@ -156,22 +164,35 @@ export function ChatInput({
         const items = e.clipboardData?.items;
         if (!items) return;
 
-        for (let i = 0; i < items.length; i++) {
-            const item = items[i];
-            if (item.kind === 'file') {
-                e.preventDefault();
+        const imageItems = Array.from(items).filter(item => item.kind === 'file' && item.type.startsWith('image/'));
+        if (imageItems.length > 0) {
+            e.preventDefault();
+            const remaining = MAX_IMAGES - images.length;
+            const toProcess = imageItems.slice(0, remaining);
+            for (const item of toProcess) {
                 const file = item.getAsFile();
-                if (file) {
-                    await processFile(file);
+                if (file) await processFile(file);
+            }
+        } else {
+            // Non-image file (doc, etc)
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                if (item.kind === 'file') {
+                    e.preventDefault();
+                    const file = item.getAsFile();
+                    if (file) await processFile(file);
+                    break;
                 }
-                break;
             }
         }
     };
 
+    const removeImage = (index: number) => {
+        setImages(prev => prev.filter((_, i) => i !== index));
+    };
+
     const removeAttachment = () => {
-        setImagePreview(null);
-        setImageBase64(null);
+        setImages([]);
         setDocumentFile(null);
     };
 
@@ -183,9 +204,9 @@ export function ChatInput({
             return;
         }
 
-        if ((!content.trim() && !imageBase64 && !documentFile) || disabled) return;
+        if ((!content.trim() && images.length === 0 && !documentFile) || disabled) return;
 
-        onSendMessage(content, imageBase64 || undefined, documentFile || undefined);
+        onSendMessage(content, images.length > 0 ? images : undefined, documentFile || undefined);
         setContent('');
         removeAttachment();
 
@@ -201,7 +222,7 @@ export function ChatInput({
         }
     };
 
-    const canSend = content.trim() || imageBase64 || documentFile;
+    const canSend = content.trim() || images.length > 0 || documentFile;
 
     return (
         <div className="fixed bottom-0 right-0 z-40 left-0 md:left-64 p-4 md:pb-6 bg-gradient-to-t from-dark-bg via-dark-bg/95 to-transparent transition-all duration-300">
@@ -232,21 +253,33 @@ export function ChatInput({
                     `}
                 >
                     {/* Previews Area (if attachments exist) */}
-                    {(imagePreview || documentFile) && (
+                    {(images.length > 0 || documentFile) && (
                         <div className="px-4 pt-4 pb-0">
-                            {imagePreview && (
-                                <div className="relative inline-block group">
-                                    <img
-                                        src={imagePreview}
-                                        alt="Preview"
-                                        className="h-16 w-auto rounded-lg border border-white/10 object-cover"
-                                    />
-                                    <button
-                                        onClick={removeAttachment}
-                                        className="absolute -top-2 -right-2 p-1 bg-zinc-800 border border-zinc-700 rounded-full text-zinc-400 hover:text-red-400 hover:border-red-400 transition-colors shadow-lg"
-                                    >
-                                        <X className="w-3 h-3" />
-                                    </button>
+                            {images.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mb-1">
+                                    {images.map((src, idx) => (
+                                        <div key={idx} className="relative inline-block group">
+                                            <img
+                                                src={src}
+                                                alt={`Imagem ${idx + 1}`}
+                                                className="h-16 w-16 rounded-lg border border-white/10 object-cover"
+                                            />
+                                            <button
+                                                onClick={() => removeImage(idx)}
+                                                className="absolute -top-2 -right-2 p-1 bg-zinc-800 border border-zinc-700 rounded-full text-zinc-400 hover:text-red-400 hover:border-red-400 transition-colors shadow-lg"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {images.length < MAX_IMAGES && (
+                                        <button
+                                            onClick={handleFileClick}
+                                            className="h-16 w-16 rounded-lg border border-dashed border-zinc-600 hover:border-zinc-400 flex items-center justify-center text-zinc-500 hover:text-zinc-300 transition-colors text-xs font-mono"
+                                        >
+                                            +{MAX_IMAGES - images.length}
+                                        </button>
+                                    )}
                                 </div>
                             )}
                             {documentFile && (
@@ -350,6 +383,7 @@ export function ChatInput({
                 ref={fileInputRef}
                 type="file"
                 accept="image/*,video/*,.pdf,.docx,.txt,.md,.csv,.json"
+                multiple
                 onChange={handleFileSelect}
                 className="hidden"
             />

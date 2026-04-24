@@ -48,7 +48,7 @@ export function ChatPage() {
     const [isSearchingWeb, setIsSearchingWeb] = useState(false);
     // Imagens associadas a mensagens — armazenadas localmente para exibição no chat
     // (não vão ao banco — são apenas para UI deste session)
-    const [messageImages, setMessageImages] = useState<Record<string, string>>({});
+    const [messageImages, setMessageImages] = useState<Record<string, string[]>>({});
 
     const streamingContentRef = useRef('');
     const activeChatIdRef = useRef<string | undefined>(currentChatId);
@@ -215,7 +215,7 @@ export function ChatPage() {
     // handleSendMessage - Vision Proxy & Deep Research Integration
     // =====================================================
     const handleSendMessage = useCallback(
-        async (content: string, imageBase64?: string, parsedFile?: import('../lib/fileParser').ParsedFile) => {
+        async (content: string, imagesBase64?: string[], parsedFile?: import('../lib/fileParser').ParsedFile) => {
             // Limpa chips de follow-up imediatamente ao iniciar novo prompt
             clearFollowups();
             // INTERCEPTOR: Se não estiver logado, salvar mensagem e pedir login
@@ -223,7 +223,7 @@ export function ChatPage() {
                 // Salvar mensagem pendente
                 const pendingData = {
                     content,
-                    imageBase64,
+                    imagesBase64,
                     parsedFile
                 };
                 sessionStorage.setItem('pending_message', JSON.stringify(pendingData));
@@ -256,7 +256,6 @@ export function ChatPage() {
             }
 
             // ===== DEEP RESEARCH FLOW =====
-            // ===== DEEP RESEARCH FLOW =====
             let searchContext = '';
             if (isWebSearchEnabled) {
                 try {
@@ -270,7 +269,6 @@ export function ChatPage() {
                     console.log("🔍 [DEBUG] Resposta Deep Research:", data);
 
                     if (error) {
-                        // Verificando se é erro de limite (403 ou mensagem específica)
                         const isLimitError = error && (
                             error.code === 403 ||
                             error.context?.response?.status === 403 ||
@@ -291,60 +289,49 @@ export function ChatPage() {
                     }
                 } catch (err) {
                     console.error('Deep Search failed:', err);
-                    // Erro já tratado no if(error) acima se for limite
                 } finally {
                     setIsSearchingWeb(false);
                 }
             }
 
-            // ===== VISION DIRECT MULTIMODAL =====
-            // ===== DOCUMENT PROCESSING FLOW (PDF, DOCX, etc) =====
+            // ===== VISION DIRECT MULTIMODAL / DOCUMENT FLOW =====
             let finalContent = content;
+            const hasImages = imagesBase64 && imagesBase64.length > 0;
 
-            if (imageBase64) {
-                // Imagem enviada diretamente na chamada de streaming — o modelo vê
-                // pergunta + imagem ao mesmo tempo (multimodal nativo).
-                // Não há mais etapa de "análise prévia" que introduzia erros de identificação.
+            if (hasImages) {
                 finalContent = content || 'Descreva esta imagem';
             } else if (parsedFile) {
-                // Processar documento (PDF, DOCX, TXT, etc)
                 const { formatFileContentForAI } = await import('../lib/fileParser');
                 finalContent = formatFileContentForAI(parsedFile, content);
             }
 
-            // Salvar mensagem do usuário com finalContent limpo (sem contexto de pesquisa)
-            // searchContext é injetado apenas no apiMessages abaixo, nunca persistido no banco.
             const userMessage = await addUserMessage(finalContent, activeChatId);
             if (!userMessage) {
                 console.error('Falha ao salvar mensagem do usuário');
                 return;
             }
 
-            // Associar imagem à mensagem para exibição local (não vai ao banco)
-            if (imageBase64 && userMessage?.id) {
-                setMessageImages(prev => ({ ...prev, [userMessage.id]: imageBase64 }));
+            // Associar imagens à mensagem para exibição local
+            if (hasImages && userMessage?.id) {
+                setMessageImages(prev => ({ ...prev, [userMessage.id]: imagesBase64! }));
             }
 
             // Iniciar streaming
             startStreaming(activeChatId);
             streamingContentRef.current = '';
 
-            // Preparar histórico para API
             const persistedMessages = messages.filter((m) => !m.id.startsWith('streaming-'));
             const apiMessages: OpenRouterMessage[] = persistedMessages.map((msg) => ({
                 role: msg.role,
                 content: msg.content,
             }));
 
-            // Adicionar a mensagem atual
-            // Para imagens: envia como multimodal (image_url + text) diretamente no streaming
-            // O edge function detecta hasImages=true → roteia para qwen3-vl-235b-a22b
-            // O modelo vê pergunta + imagem ao mesmo tempo — sem proxy de 2 etapas
-            if (imageBase64) {
+            if (hasImages) {
+                const imageContent = imagesBase64!.map(url => ({ type: 'image_url' as const, image_url: { url } }));
                 const multimodalMsg: OpenRouterMessage = {
                     role: 'user',
                     content: [
-                        { type: 'image_url', image_url: { url: imageBase64 } },
+                        ...imageContent,
                         { type: 'text', text: searchContext ? `${finalContent}\n\n${searchContext}` : finalContent },
                     ],
                 };
@@ -422,11 +409,11 @@ export function ChatPage() {
                 sessionStorage.removeItem('pending_message');
 
                 // 3. Recupera dados e envia
-                const { content, imageBase64, parsedFile } = JSON.parse(pendingMsg);
+                const { content, imagesBase64, parsedFile } = JSON.parse(pendingMsg);
 
                 // Pequeno delay para garantir que tudo carregou
                 setTimeout(() => {
-                    handleSendMessage(content, imageBase64, parsedFile);
+                    handleSendMessage(content, imagesBase64, parsedFile);
                 }, 500);
             } catch (e) {
                 console.error('Erro ao recuperar mensagem pendente', e);
