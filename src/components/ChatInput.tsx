@@ -247,7 +247,7 @@ export function ChatInput({
                     onDragLeave={handleDragLeave}
                     onDragOver={handleDragOver}
                     onDrop={handleDrop}
-                    className={`flex flex-col bg-zinc-900/80 backdrop-blur-md border border-zinc-800 hover:border-zinc-700 transition-all duration-300 rounded-2xl shadow-xl overflow-hidden
+                    className={`flex flex-col bg-zinc-900/80 backdrop-blur-md border border-zinc-800 hover:border-zinc-700 focus-within:border-zinc-700 focus-within:ring-0 focus-within:outline-none transition-all duration-300 rounded-2xl shadow-xl overflow-hidden
                         ${isDragging ? 'border-matrix-primary ring-1 ring-matrix-primary' : ''}
                         ${isWebSearchEnabled ? 'shadow-[0_0_20px_rgba(0,0,0,0.5)]' : ''}
                     `}
@@ -315,7 +315,7 @@ export function ChatInput({
                         }
                         rows={1}
                         disabled={disabled}
-                        className="w-full bg-transparent border-none focus:ring-0 text-white placeholder-zinc-500 min-h-[50px] max-h-[200px] resize-none px-4 py-3 scrollbar-hide text-[15px] sm:text-base leading-relaxed"
+                        className="w-full bg-transparent border-none outline-none focus:ring-0 focus:outline-none text-white placeholder-zinc-500 min-h-[50px] max-h-[200px] resize-none px-4 py-3 scrollbar-hide text-[15px] sm:text-base leading-relaxed"
                     />
 
                     {/* Toolbar (Bottom Bar) */}
