@@ -212,9 +212,6 @@ export function ProfilePage() {
 
 export default ProfilePage;
 
-import { useAuth } from '../contexts/AuthContext';
-import { useSubscription } from '../hooks/useSubscription';
-import { PrometheusModal } from '../components/PrometheusModal';
 
 export function ProfilePage() {
     const navigate = useNavigate();
