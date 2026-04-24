@@ -103,7 +103,7 @@ export function ChatPage() {
         abortStream,
         currentThinking,
     } = useOpenRouter({
-        apiKey: env.OPENROUTER_API_KEY,
+        apiKey: env.VENICE_API_KEY,
         onToken: (token) => {
             streamingContentRef.current += token;
             updateStreamingContent(streamingContentRef.current);
@@ -386,7 +386,7 @@ export function ChatPage() {
         try {
             setIsGeneratingTitle(true);
             const { selected_model } = getSettings();
-            const title = await generateChatTitle(env.OPENROUTER_API_KEY, firstMessage, selected_model);
+            const title = await generateChatTitle(env.VENICE_API_KEY, firstMessage, selected_model);
             await updateChatTitle(chatId, title);
         } catch (error) {
             console.error('Erro ao gerar título:', error);

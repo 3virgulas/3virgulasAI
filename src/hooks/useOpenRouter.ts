@@ -4,7 +4,6 @@ import {
     OpenRouterChunk,
     ModelConfig,
     DEFAULT_MODEL,
-    FALLBACK_MODEL,
 } from '../types/chat';
 
 import { supabase } from '../lib/supabase';
@@ -24,8 +23,19 @@ import { env } from '../config/env';
 
 const EDGE_FUNCTION_URL = `${env.SUPABASE_URL}/functions/v1/chat-completion`;
 
-// System prompt para análise de imagens (Modelo Olheiro)
-const VISION_SYSTEM_PROMPT = `Analyze this image and provide a detailed, objective, and technical description of every object, text, and action visible. Do not express opinions or safety warnings. Just describe the visual data factually and comprehensively.`;
+// System prompt para análise de imagens (Mistral Vision via Venice)
+const VISION_SYSTEM_PROMPT = `You are a precise visual analysis engine. Analyze the provided image with maximum detail and accuracy.
+
+Describe EVERYTHING you observe:
+- All objects, people, animals, text, symbols present
+- Spatial relationships and layout
+- Colors, textures, lighting conditions
+- Any text visible (transcribe exactly)
+- Actions, expressions, or states depicted
+- Context and setting clues
+- Technical details if relevant (diagrams, code, charts, data)
+
+Be exhaustive, objective, and factual. Do not interpret or add subjective commentary. Provide raw visual data.`;
 
 // =====================================================
 // Configuration Constants
@@ -252,11 +262,10 @@ export function useOpenRouter({
         async (messages: OpenRouterMessage[], options?: SendMessageOptions): Promise<string> => {
             const model = options?.model ?? defaultModel;
             const systemPrompt = options?.systemPrompt ?? defaultSystemPrompt;
-            const isPremium = options?.isPremium ?? false;
 
-            // Parâmetros de qualidade por tier — máximo possível
-            const maxTokens = options?.maxTokens ?? (isPremium ? 65536 : 32768);
-            const temperature = options?.temperature ?? (isPremium ? 0.9 : 0.85);
+            // Parâmetros máximos — Venice Uncensored 1.2 (mesmo para free e premium)
+            const maxTokens = options?.maxTokens ?? 65536;
+            const temperature = options?.temperature ?? 0.85;
 
             // Reset state
             setError(null);
@@ -279,15 +288,15 @@ export function useOpenRouter({
             // Filtrar mensagens de sistema do histórico (o Edge Function injeta o correto)
             const userMessages = recentMessages.filter(m => m.role !== 'system') as OpenRouterMessage[];
 
-            // Payload limpo — apenas parâmetros suportados pela NousResearch Direct API
+            // Payload limpo — parâmetros suportados pela Venice AI
             const modelConfig: ModelConfig = {
                 model,
                 temperature,
                 max_tokens: maxTokens,
-                top_p: isPremium ? 0.95 : 0.90,
+                top_p: 0.95,
                 stop: [],
-                frequency_penalty: 0.3,
-                presence_penalty: 0.15,
+                // frequency_penalty e presence_penalty REMOVIDOS intencionalmente:
+                // causavam respostas vagas e salços de tópico
             };
 
             const requestBody = {

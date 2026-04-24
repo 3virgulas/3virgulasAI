@@ -9,8 +9,8 @@ interface EnvConfig {
     SUPABASE_URL: string;
     SUPABASE_ANON_KEY: string;
 
-    // OpenRouter
-    OPENROUTER_API_KEY: string;
+    // Venice AI
+    VENICE_API_KEY: string;
 
     // App
     APP_NAME: string;
@@ -33,8 +33,8 @@ export const env: EnvConfig = {
     SUPABASE_URL: getEnvVar('VITE_SUPABASE_URL'),
     SUPABASE_ANON_KEY: getEnvVar('VITE_SUPABASE_ANON_KEY'),
 
-    // OpenRouter
-    OPENROUTER_API_KEY: getEnvVar('VITE_OPENROUTER_API_KEY'),
+    // Venice AI
+    VENICE_API_KEY: getEnvVar('VITE_VENICE_API_KEY'),
 
     // App
     APP_NAME: getEnvVar('VITE_APP_NAME', '3Vírgulas'),
@@ -48,7 +48,7 @@ if (env.IS_DEV) {
 
     if (!env.SUPABASE_URL) missingVars.push('VITE_SUPABASE_URL');
     if (!env.SUPABASE_ANON_KEY) missingVars.push('VITE_SUPABASE_ANON_KEY');
-    if (!env.OPENROUTER_API_KEY) missingVars.push('VITE_OPENROUTER_API_KEY');
+    if (!env.VENICE_API_KEY) missingVars.push('VITE_VENICE_API_KEY');
 
     if (missingVars.length > 0) {
         console.warn(

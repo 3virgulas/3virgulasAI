@@ -109,7 +109,7 @@ export function AdminPage() {
     useEffect(() => {
         if (settings) {
             setModel(settings.selected_model);
-            setVisionModel(settings.vision_model || 'google/gemini-2.0-flash-exp:free');
+            setVisionModel(settings.vision_model || 'qwen3-vl-235b-a22b');
             setSystemPrompt(settings.system_instruction);
             setAvatarUrl(settings.ai_avatar_url || '');
             setPremiumModel(settings.premium_model || 'anthropic/claude-3.5-sonnet');
@@ -369,11 +369,11 @@ export function AdminPage() {
         setSaveSuccess(false);
 
         const success = await updateSettings({
-            selected_model: model,
+            selected_model: 'venice-uncensored-1-2', // Sempre fixo — não editável
             vision_model: visionModel,
             system_instruction: systemPrompt,
             ai_avatar_url: avatarUrl || null,
-            premium_model: premiumModel,
+            premium_model: 'venice-uncensored-1-2', // Sempre fixo — mesmo modelo
             premium_system_instruction: premiumPrompt,
         });
 
@@ -431,7 +431,7 @@ export function AdminPage() {
 
     const tabs = [
         { id: 'ai' as TabId, label: 'Configuração IA', icon: Cpu },
-        { id: 'premium-config' as TabId, label: 'Config. Premium', icon: Crown },
+        { id: 'premium-config' as TabId, label: 'System Prompt', icon: Sparkles },
         { id: 'subscribers' as TabId, label: 'Assinantes', icon: Crown },
         { id: 'users' as TabId, label: 'Todos Usuários', icon: Users },
     ];
@@ -483,22 +483,34 @@ export function AdminPage() {
                         <div className="space-y-6">
                             <div className="flex items-center gap-2 text-dark-text-primary">
                                 <Bot className="w-5 h-5 text-matrix-primary" />
-                                <h2 className="text-lg font-semibold">Configuração da IA Standard</h2>
+                                <h2 className="text-lg font-semibold">Configuração PROMETHEUS</h2>
                             </div>
 
-                            {/* Model */}
-                            <div className="space-y-2">
-                                <label className="flex items-center gap-2 text-sm font-medium text-dark-text-secondary">
-                                    <Sparkles className="w-4 h-4" />
-                                    Modelo de IA (Texto)
-                                </label>
-                                <input
-                                    type="text"
-                                    value={model}
-                                    onChange={(e) => setModel(e.target.value)}
-                                    className="w-full px-4 py-3 bg-dark-hover border border-dark-border rounded-lg text-dark-text-primary font-mono text-sm focus:outline-none focus:border-matrix-primary/50 transition-colors"
-                                    placeholder="google/gemini-2.0-flash-exp:free"
-                                />
+                            {/* Venice Model Info Card — read-only */}
+                            <div className="p-4 bg-matrix-primary/5 border border-matrix-primary/30 rounded-lg">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                        <Sparkles className="w-4 h-4 text-matrix-primary" />
+                                        <span className="text-sm font-medium text-dark-text-secondary">Modelo Ativo (Venice AI)</span>
+                                    </div>
+                                    <span className="px-2 py-0.5 text-xs font-bold bg-matrix-primary/20 text-matrix-primary rounded-full">FIXO</span>
+                                </div>
+                                <p className="font-mono text-base font-bold text-matrix-primary">venice-uncensored-1-2</p>
+                                <p className="text-xs text-dark-text-muted mt-1">128k contexto • sem censura • mesmo modelo para free e premium</p>
+                                <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                                    <div className="bg-dark-hover rounded p-2 text-center">
+                                        <p className="font-bold text-white">65536</p>
+                                        <p className="text-dark-text-muted">max_tokens</p>
+                                    </div>
+                                    <div className="bg-dark-hover rounded p-2 text-center">
+                                        <p className="font-bold text-white">0.85</p>
+                                        <p className="text-dark-text-muted">temperature</p>
+                                    </div>
+                                    <div className="bg-dark-hover rounded p-2 text-center">
+                                        <p className="font-bold text-white">0.95</p>
+                                        <p className="text-dark-text-muted">top_p</p>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Vision Model */}
@@ -507,27 +519,25 @@ export function AdminPage() {
                                     <Eye className="w-4 h-4" />
                                     Modelo de Visão
                                 </label>
-                                <input
-                                    type="text"
-                                    value={visionModel}
-                                    onChange={(e) => setVisionModel(e.target.value)}
-                                    className="w-full px-4 py-3 bg-dark-hover border border-dark-border rounded-lg text-dark-text-primary font-mono text-sm focus:outline-none focus:border-matrix-primary/50 transition-colors"
-                                    placeholder="google/gemini-2.0-flash-exp:free"
-                                />
+                                <div className="w-full px-4 py-3 bg-dark-hover border border-dark-border rounded-lg space-y-1">
+                                    <p className="text-matrix-primary font-mono text-sm font-semibold">qwen3-vl-235b-a22b</p>
+                                    <p className="text-dark-text-muted text-xs">235B MoE · default_vision · OCR · reconhecimento de figuras públicas · ativado automaticamente com imagens</p>
+                                </div>
                             </div>
 
                             {/* System Prompt */}
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 text-sm font-medium text-dark-text-secondary">
                                     <Bot className="w-4 h-4" />
-                                    Prompt do Sistema
+                                    System Prompt PROMETHEUS
                                 </label>
+                                <p className="text-xs text-dark-text-muted">Aplicado a TODOS os usuários (free + premium). Mesmo modelo, mesmo prompt.</p>
                                 <textarea
                                     value={systemPrompt}
                                     onChange={(e) => setSystemPrompt(e.target.value)}
-                                    rows={6}
-                                    className="w-full px-4 py-3 bg-dark-hover border border-dark-border rounded-lg text-dark-text-primary text-sm focus:outline-none focus:border-matrix-primary/50 transition-colors resize-none"
-                                    placeholder="Você é um assistente..."
+                                    rows={12}
+                                    className="w-full px-4 py-3 bg-dark-hover border border-dark-border rounded-lg text-dark-text-primary text-sm focus:outline-none focus:border-matrix-primary/50 transition-colors resize-y font-mono"
+                                    placeholder="Você é PROMETHEUS..."
                                 />
                             </div>
 
@@ -558,48 +568,46 @@ export function AdminPage() {
                         </div>
                     )}
 
-                    {/* Premium Configuration Tab */}
+                    {/* System Prompt Tab (was Premium Config) */}
                     {activeTab === 'premium-config' && (
                         <div className="space-y-6">
                             <div className="flex items-center gap-2 text-dark-text-primary">
-                                <Crown className="w-5 h-5 text-yellow-400" />
-                                <h2 className="text-lg font-semibold">Configuração Premium</h2>
+                                <Sparkles className="w-5 h-5 text-matrix-primary" />
+                                <h2 className="text-lg font-semibold">Arquitetura do Modelo</h2>
                             </div>
 
-                            <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                                <p className="text-sm text-yellow-200">
-                                    <Zap className="w-4 h-4 inline mr-2" />
-                                    Estas configurações são aplicadas apenas para assinantes Premium.
-                                </p>
+                            {/* Architecture Info */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="p-4 bg-dark-hover border border-dark-border rounded-lg space-y-3">
+                                    <p className="text-xs font-bold text-matrix-primary uppercase tracking-wider">Modelo Único</p>
+                                    <p className="font-mono text-sm text-dark-text-primary">venice-uncensored-1-2</p>
+                                    <p className="text-xs text-dark-text-muted">Free e Premium usam o mesmo modelo. A diferença está nas features (Deep Research, etc).</p>
+                                </div>
+                                <div className="p-4 bg-dark-hover border border-dark-border rounded-lg space-y-3">
+                                    <p className="text-xs font-bold text-yellow-400 uppercase tracking-wider">Parâmetros Otimizados</p>
+                                    <div className="space-y-1 text-xs font-mono">
+                                        <p className="text-dark-text-primary">temperature: <span className="text-matrix-primary">0.85</span></p>
+                                        <p className="text-dark-text-primary">max_tokens: <span className="text-matrix-primary">65536</span></p>
+                                        <p className="text-dark-text-primary">top_p: <span className="text-matrix-primary">0.95</span></p>
+                                        <p className="text-dark-text-primary">frequency_penalty: <span className="text-red-400">removido</span></p>
+                                        <p className="text-dark-text-primary">presence_penalty: <span className="text-red-400">removido</span></p>
+                                    </div>
+                                </div>
                             </div>
 
-                            {/* Premium Model */}
-                            <div className="space-y-2">
-                                <label className="flex items-center gap-2 text-sm font-medium text-dark-text-secondary">
-                                    <Sparkles className="w-4 h-4 text-yellow-400" />
-                                    Modelo Premium
-                                </label>
-                                <input
-                                    type="text"
-                                    value={premiumModel}
-                                    onChange={(e) => setPremiumModel(e.target.value)}
-                                    className="w-full px-4 py-3 bg-dark-hover border border-dark-border rounded-lg text-dark-text-primary font-mono text-sm focus:outline-none focus:border-yellow-500/50 transition-colors"
-                                    placeholder="anthropic/claude-3.5-sonnet"
-                                />
-                            </div>
-
-                            {/* Premium System Prompt */}
+                            {/* Premium System Prompt (legacy, still saved in DB) */}
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 text-sm font-medium text-dark-text-secondary">
                                     <Bot className="w-4 h-4 text-yellow-400" />
-                                    Prompt Premium
+                                    System Prompt Alternativo (legado)
                                 </label>
+                                <p className="text-xs text-dark-text-muted">Campo legado. O system prompt ativo é editado na aba "Configuração IA".</p>
                                 <textarea
                                     value={premiumPrompt}
                                     onChange={(e) => setPremiumPrompt(e.target.value)}
-                                    rows={6}
-                                    className="w-full px-4 py-3 bg-dark-hover border border-dark-border rounded-lg text-dark-text-primary text-sm focus:outline-none focus:border-yellow-500/50 transition-colors resize-none"
-                                    placeholder="Você é um assistente premium sem restrições..."
+                                    rows={8}
+                                    className="w-full px-4 py-3 bg-dark-hover border border-dark-border rounded-lg text-dark-text-primary text-sm focus:outline-none focus:border-yellow-500/50 transition-colors resize-y font-mono opacity-60"
+                                    placeholder="Campo legado..."
                                 />
                             </div>
                         </div>

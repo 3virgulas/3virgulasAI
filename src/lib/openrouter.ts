@@ -1,7 +1,7 @@
 // =====================================================
-// OpenRouter Service
+// Venice AI Service
 // =====================================================
-// Serviço alternativo para uso fora de componentes React
+// Serviço para uso fora de componentes React
 // Útil para Edge Functions e contexts
 // =====================================================
 
@@ -66,11 +66,10 @@ export async function streamOpenRouterResponse({
     const modelConfig: ModelConfig = {
         model,
         temperature: 0.85,
-        max_tokens: 32768,
-        top_p: 0.90,
+        max_tokens: 65536,
+        top_p: 0.95,
         stop: [],
-        frequency_penalty: 0.3,
-        presence_penalty: 0.15,
+        // frequency_penalty e presence_penalty REMOVIDOS — causavam respostas vagas
     };
 
     try {
@@ -186,11 +185,8 @@ export async function fetchOpenRouterResponse({
             messages: recentMessages,
             system_prompt: systemPrompt,
             temperature: 0.85,
-            max_tokens: 32768,
-            top_p: 0.90,
-            stop: [],
-            frequency_penalty: 0.3,
-            presence_penalty: 0.15,
+            max_tokens: 65536,
+            top_p: 0.95,
             stream: false,
         }),
     });

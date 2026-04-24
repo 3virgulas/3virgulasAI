@@ -1,6 +1,6 @@
 // =====================================================
 // Chat Types — 3Vírgulas
-// Provedor: NousResearch Direct API
+// Provedor: Venice AI (api.venice.ai/api/v1)
 // =====================================================
 
 export type MessageRole = 'user' | 'assistant' | 'system';
@@ -50,24 +50,24 @@ export interface ModelConfig {
     max_tokens?: number;
     top_p?: number;
     stop?: string[];
-    frequency_penalty?: number;
-    presence_penalty?: number;
+    // frequency_penalty e presence_penalty intencionalmente omitidos
+    // Causam respostas vagas e salços de tópico no venice-uncensored-1-2
 }
 
 // =====================================================
-// Modelos NousResearch Inference API (confirmados em /v1/models)
+// Modelos Venice AI (venice.ai)
+// Provedor: Venice — OpenAI-compatible, sem censura
 // =====================================================
-export const NOUS_MODELS = {
-    'Hermes-4-405B': 'Hermes 4 405B 🔥 (Máximo)',
-    'Hermes-4-70B': 'Hermes 4 70B ⚡ (Rápido)',
+export const VENICE_MODELS = {
+    'venice-uncensored-1-2': 'PROMETHEUS ⚡ (Venice Uncensored 1.2)',
 } as const;
 
-export type NousModelId = keyof typeof NOUS_MODELS;
+export type VeniceModelId = keyof typeof VENICE_MODELS;
 
-// Modelo principal e fallback
-export const DEFAULT_MODEL: NousModelId = 'Hermes-4-405B';
-export const FALLBACK_MODEL: NousModelId = 'Hermes-4-70B';
+// Modelo único para todos os usuários
+export const DEFAULT_MODEL: VeniceModelId = 'venice-uncensored-1-2';
+export const FALLBACK_MODEL: VeniceModelId = 'venice-uncensored-1-2';
 
-// Aliases para compatibilidade
-export const FREE_MODEL = 'Hermes-4-405B';
-export const PREMIUM_MODEL = 'Hermes-4-405B';
+// Aliases para compatibilidade — mesmo modelo para free e premium
+export const FREE_MODEL = 'venice-uncensored-1-2';
+export const PREMIUM_MODEL = 'venice-uncensored-1-2';

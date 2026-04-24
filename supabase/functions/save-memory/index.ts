@@ -4,14 +4,15 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3"
 // =====================================================
 // save-memory Edge Function — 3Vírgulas
 // =====================================================
-// Gera um resumo compacto da conversa atual usando o
-// NousResearch e salva na tabela profiles.memory_summary.
+// Gera um resumo compacto da conversa atual usando a
+// Venice AI e salva na tabela profiles.memory_summary.
 // Chamada pelo frontend quando o usuário inicia uma nova
 // conversa (se a conversa anterior teve ≥ 6 mensagens).
 // =====================================================
 
-const NOUS_API_KEY = Deno.env.get('NOUS_API_KEY')
-const NOUS_API_URL = 'https://inference-api.nousresearch.com/v1/chat/completions'
+const VENICE_API_KEY = Deno.env.get('VENICE_API_KEY')
+const VENICE_API_URL = 'https://api.venice.ai/api/v1/chat/completions'
+const VENICE_MODEL = 'venice-uncensored-1-2'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 
@@ -48,8 +49,8 @@ serve(async (req) => {
   }
 
   try {
-    if (!NOUS_API_KEY) {
-      throw new Error('NOUS_API_KEY não configurada')
+    if (!VENICE_API_KEY) {
+      throw new Error('VENICE_API_KEY não configurada')
     }
 
     // 1. Autenticar usuário
@@ -122,14 +123,14 @@ serve(async (req) => {
       content: `Conversa a analisar:\n\n${conversationText}`
     })
 
-    const nousResponse = await fetch(NOUS_API_URL, {
+    const nousResponse = await fetch(VENICE_API_URL, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${NOUS_API_KEY}`,
+        'Authorization': `Bearer ${VENICE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'Hermes-4-70B',
+        model: VENICE_MODEL,
         messages: extractionMessages,
         stream: false,
         temperature: 0.2,    // Baixa temperatura para extração factual precisa
@@ -139,7 +140,7 @@ serve(async (req) => {
 
     if (!nousResponse.ok) {
       const err = await nousResponse.text()
-      throw new Error(`NousResearch error ${nousResponse.status}: ${err}`)
+      throw new Error(`Venice AI error ${nousResponse.status}: ${err}`)
     }
 
     const nousData = await nousResponse.json()
