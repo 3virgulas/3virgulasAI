@@ -410,18 +410,25 @@ HISTÓRICO:\n${formatted}`,
                 max_tokens: maxTokens,
                 top_p: 0.95,
                 stop: [],
-                // frequency_penalty e presence_penalty REMOVIDOS intencionalmente:
-                // causavam respostas vagas e salços de tópico
             };
+
+            // Detectar se a requisição contém imagens para usar timeout maior
+            // e sinalizar explicitamente ao edge function o roteamento de visão
+            const hasVisionContent = userMessages.some(m =>
+                Array.isArray(m.content) &&
+                (m.content as Array<{ type: string }>).some(c => c.type === 'image_url')
+            );
+            const chatTimeoutMs = hasVisionContent ? VISION_TIMEOUT_MS : REQUEST_TIMEOUT_MS;
 
             const requestBody = {
                 ...modelConfig,
-                messages: userMessages,      // system_prompt é injetado pelo Edge Function
-                system_prompt: systemPrompt, // passado separado para o Edge Function montar
-                chat_id: chatId,             // escopo RAG: filtra embeddings do chat atual
+                messages: userMessages,
+                system_prompt: systemPrompt,
+                chat_id: chatId,
                 stream: true,
                 max_tokens: maxTokens,
                 temperature,
+                ...(hasVisionContent && { is_vision: true }), // sinaliza roteamento explícito no edge
             };
 
             let lastError: Error | null = null;
@@ -433,7 +440,7 @@ HISTÓRICO:\n${formatted}`,
                     }
 
                     const { timeoutId } = createTimeoutController(
-                        REQUEST_TIMEOUT_MS,
+                        chatTimeoutMs,
                         abortControllerRef.current
                     );
                     timeoutIdRef.current = timeoutId;

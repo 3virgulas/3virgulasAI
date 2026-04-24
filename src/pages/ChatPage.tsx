@@ -18,6 +18,7 @@ import { useFollowups } from '../hooks/useFollowups';
 import { generateChatTitle } from '../lib/openrouter';
 import { supabase } from '../lib/supabase';
 import { env } from '../config/env';
+import type { OpenRouterMessage } from '../types/chat';
 import { useAuth } from '../contexts/AuthContext';
 import { Sidebar } from '../components/Sidebar';
 import { MobileHeader } from '../components/MobileHeader';
@@ -40,7 +41,6 @@ export function ChatPage() {
     const navigate = useNavigate();
     const [currentChatId, setCurrentChatId] = useState<string | undefined>();
     const [_isGeneratingTitle, setIsGeneratingTitle] = useState(false);
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [showPrometheusModal, setShowPrometheusModal] = useState(false);
     const [showGuestModal, setShowGuestModal] = useState(false);
@@ -160,7 +160,6 @@ export function ChatPage() {
             alert(`Erro: ${error.message}`);
             cancelStreaming();
             streamingContentRef.current = '';
-            setIsAnalyzing(false);
         },
     });
 
@@ -236,7 +235,7 @@ export function ChatPage() {
 
             // Usar configurações Premium se for assinante ativo
             const settings = isPremium ? getPremiumSettings() : getSettings();
-            const { selected_model, system_instruction, vision_model } = settings;
+            const { selected_model, system_instruction } = settings;
 
             let activeChatId = currentChatId;
 
@@ -298,34 +297,15 @@ export function ChatPage() {
                 }
             }
 
-            // ===== VISION PROXY FLOW (Images) =====
+            // ===== VISION DIRECT MULTIMODAL =====
             // ===== DOCUMENT PROCESSING FLOW (PDF, DOCX, etc) =====
             let finalContent = content;
-            // Contexto visual injetado como system temporário (não salvo no banco).
-            // Modelos Venice seguem a spec OpenAI: instruções de contexto pertencem ao
-            // role system, não ao role user — garante maior aderência e fidelidade.
-            let visualSystemContext: string | null = null;
 
             if (imageBase64) {
-                try {
-                    setIsAnalyzing(true);
-
-                    // Fase 1: Modelo de Visão analisa a imagem
-                    const visualDescription = await analyzeImage(imageBase64, vision_model);
-
-                    // Fase 2: descrição visual → system temporário; user recebe só a pergunta
-                    if (visualDescription) {
-                        visualSystemContext = `[CONTEXTO VISUAL — apenas para este turno]\nO usuário anexou uma imagem. Descrição detalhada gerada pelo modelo de visão:\n\n"${visualDescription}"\n\nUse esta descrição para responder à pergunta do usuário. Não mencione que recebeu uma "descrição" — responda como se tivesse visto a imagem diretamente.`;
-                        // finalContent guarda apenas a pergunta (o que é salvo no banco)
-                        finalContent = content || 'Descreva esta imagem';
-                    }
-
-                    setIsAnalyzing(false);
-                } catch (error) {
-                    console.error('Erro na análise de imagem:', error);
-                    setIsAnalyzing(false);
-                    finalContent = content || 'Descreva esta imagem';
-                }
+                // Imagem enviada diretamente na chamada de streaming — o modelo vê
+                // pergunta + imagem ao mesmo tempo (multimodal nativo).
+                // Não há mais etapa de "análise prévia" que introduzia erros de identificação.
+                finalContent = content || 'Descreva esta imagem';
             } else if (parsedFile) {
                 // Processar documento (PDF, DOCX, TXT, etc)
                 const { formatFileContentForAI } = await import('../lib/fileParser');
@@ -351,28 +331,30 @@ export function ChatPage() {
 
             // Preparar histórico para API
             const persistedMessages = messages.filter((m) => !m.id.startsWith('streaming-'));
-            const apiMessages = persistedMessages.map((msg) => ({
+            const apiMessages: OpenRouterMessage[] = persistedMessages.map((msg) => ({
                 role: msg.role,
                 content: msg.content,
             }));
 
-            // Adicionar a mensagem atual (com conteúdo do documento / busca / pergunta)
-            // Para imagens: injetar system temporário antes do user com a descrição visual
-            if (visualSystemContext) {
+            // Adicionar a mensagem atual
+            // Para imagens: envia como multimodal (image_url + text) diretamente no streaming
+            // O edge function detecta hasImages=true → roteia para qwen3-vl-235b-a22b
+            // O modelo vê pergunta + imagem ao mesmo tempo — sem proxy de 2 etapas
+            if (imageBase64) {
+                const multimodalMsg: OpenRouterMessage = {
+                    role: 'user',
+                    content: [
+                        { type: 'image_url', image_url: { url: imageBase64 } },
+                        { type: 'text', text: searchContext ? `${finalContent}\n\n${searchContext}` : finalContent },
+                    ],
+                };
+                apiMessages.push(multimodalMsg);
+            } else {
                 apiMessages.push({
-                    role: 'system' as const,
-                    content: visualSystemContext,
+                    role: 'user' as const,
+                    content: searchContext ? `${finalContent}\n\n${searchContext}` : finalContent,
                 });
             }
-
-            apiMessages.push({
-                role: 'user' as const,
-                // searchContext injetado aqui: vai para a API mas nunca é salvo no banco
-                // Assim a mensagem exibida ao usuário fica limpa (apenas sua pergunta original)
-                content: searchContext
-                    ? `${finalContent}\n\n${searchContext}`
-                    : finalContent,
-            });
 
             try {
                 await sendMessage(apiMessages, {
@@ -421,7 +403,6 @@ export function ChatPage() {
         abortStream();
         cancelStreaming();
         streamingContentRef.current = '';
-        setIsAnalyzing(false);
     }, [abortStream, cancelStreaming]);
 
     // =====================================================
@@ -454,7 +435,7 @@ export function ChatPage() {
     }, [user, handleSendMessage, isLoadingSubscription]);
 
     // Combinar estados de loading
-    const isProcessing = isStreaming || messagesStreaming || isAnalyzing || isAnalyzingImage || isSearchingWeb;
+    const isProcessing = isStreaming || messagesStreaming || isAnalyzingImage || isSearchingWeb;
 
     // Obter título do chat atual para o header mobile
     const currentChatTitle = chats.find((c) => c.id === currentChatId)?.title;
@@ -501,7 +482,7 @@ export function ChatPage() {
                 <MessageList
                     messages={messages}
                     isStreaming={isProcessing}
-                    isAnalyzingImage={isAnalyzing || isAnalyzingImage}
+                    isAnalyzingImage={isAnalyzingImage}
                     isReconnecting={isReconnecting}
                     reconnectAttempt={reconnectAttempt}
                     isPremium={isPremium}

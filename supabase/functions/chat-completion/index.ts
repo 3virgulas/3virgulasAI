@@ -314,7 +314,7 @@ serve(async (req) => {
                     messages: finalMessages,
                     stream: isStreaming,
                     temperature: typeof temperature === 'number' ? temperature : 0.85,
-                    max_tokens: typeof max_tokens === 'number' ? max_tokens : (hasImages ? 16384 : 65536),
+                    max_tokens: typeof max_tokens === 'number' ? max_tokens : (hasImages ? 32768 : 65536),
                     top_p: typeof body.top_p === 'number' ? body.top_p : 0.95,
                     venice_parameters: {
                         include_venice_system_prompt: false,
