@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { useSubscription } from '../hooks/useSubscription';
 import { PhoneFormModal } from './ProfileFormModal';
-import { MatrixLogo } from './MatrixLogo';
+
 
 interface PrometheusModalProps {
     isOpen: boolean;
@@ -327,7 +327,7 @@ export function PrometheusModal({
 
                         {/* Desktop: MatrixLogo */}
                         <div className="hidden md:block w-24 h-24 mx-auto mb-6">
-                            <MatrixLogo className="w-full h-full" />
+                            <img src="/vought.png" alt="Logo" className="w-full h-full object-contain" />
                         </div>
 
                         {/* Title - Different styles for mobile/desktop */}

@@ -6,7 +6,7 @@
 // =====================================================
 
 import { Menu, Plus } from 'lucide-react';
-import { MatrixLogo } from './MatrixLogo';
+
 
 interface MobileHeaderProps {
     onMenuClick: () => void;
@@ -28,7 +28,7 @@ export function MobileHeader({ onMenuClick, onNewChat }: MobileHeaderProps) {
 
             {/* Centro: Logo Minimalista */}
             <div className="flex-1 flex items-center justify-center">
-                <MatrixLogo className="w-8 h-8" />
+                <img src="/vought.png" alt="Logo" className="w-8 h-8 object-contain" />
             </div>
 
             {/* Direita: Novo Chat */}

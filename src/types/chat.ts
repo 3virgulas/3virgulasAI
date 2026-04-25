@@ -1,5 +1,5 @@
 // =====================================================
-// Chat Types — 3Vírgulas
+// Chat Types — VOUGHT
 // Provedor: Venice AI (api.venice.ai/api/v1)
 // =====================================================
 

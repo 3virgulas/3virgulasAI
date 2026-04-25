@@ -37,7 +37,7 @@ export const env: EnvConfig = {
     VENICE_API_KEY: getEnvVar('VITE_VENICE_API_KEY'),
 
     // App
-    APP_NAME: getEnvVar('VITE_APP_NAME', '3Vírgulas'),
+    APP_NAME: getEnvVar('VITE_APP_NAME', 'VOUGHT'),
     APP_URL: getEnvVar('VITE_APP_URL', 'http://localhost:5173'),
     IS_DEV: import.meta.env.DEV,
 };

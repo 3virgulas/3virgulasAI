@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Lock } from 'lucide-react';
-import { MatrixLogo } from './MatrixLogo';
+
 
 interface GuestAuthModalProps {
     isOpen: boolean;
@@ -69,7 +69,7 @@ export function GuestAuthModal({ isOpen, onClose }: GuestAuthModalProps) {
 
                 {/* Footer Branding */}
                 <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-center gap-2 opacity-50">
-                    <MatrixLogo className="w-4 h-4" />
+                    <img src="/vought.png" alt="Logo" className="w-4 h-4 object-contain" />
                     <span className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
                         Prometheus Security
                     </span>

@@ -11,7 +11,7 @@ import { ScanEye, RefreshCw, Globe } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Message } from '../types/chat';
-import { MatrixLogo } from './MatrixLogo';
+
 import { CodeBlock, InlineCode } from './CodeBlock';
 import { ThinkingBlock } from './ThinkingBlock';
 import { FollowupChips } from './FollowupChips';
@@ -76,7 +76,7 @@ export function MessageList({
                 <div className="text-center max-w-md px-6">
                     {/* Logo */}
                     <div className="w-32 h-32 mx-auto mb-6">
-                        <MatrixLogo className="w-32 h-32" />
+                        <img src="/vought.png" alt="Logo" className="w-32 h-32 object-contain" />
                     </div>
 
                     {isPremium ? (
@@ -103,7 +103,7 @@ export function MessageList({
                         <>
                             {/* Título padrão */}
                             <h2 className="text-xl font-bold text-white mb-2">
-                                3Vírgulas Chat
+                                VOUGHT
                             </h2>
 
                             {/* Subtítulo */}

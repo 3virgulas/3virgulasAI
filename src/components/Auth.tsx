@@ -8,7 +8,7 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Mail, Lock, Loader2, AlertCircle, ArrowRight, Eye, EyeOff, Phone } from 'lucide-react';
-import { MatrixLogo } from './MatrixLogo';
+
 
 // Formatar telefone enquanto digita
 const formatPhone = (value: string): string => {
@@ -88,12 +88,12 @@ export function Auth() {
                     <div className="text-center mb-8">
                         {/* Matrix Logo - Large & Centered */}
                         <div className="w-24 h-24 mx-auto mb-6">
-                            <MatrixLogo className="w-full h-full" />
+                            <img src="/vought.png" alt="Logo" className="w-full h-full object-contain" />
                         </div>
 
                         {/* Brand Name */}
                         <h1 className="text-2xl font-bold text-white tracking-[0.15em] uppercase mb-3">
-                            3Vírgulas
+                            VOUGHT
                         </h1>
 
                         {/* Value Proposition - The Hook */}
@@ -230,7 +230,7 @@ export function Auth() {
 
                 {/* Bottom Branding */}
                 <p className="mt-8 text-center text-[9px] text-zinc-600 uppercase tracking-[0.2em] font-mono">
-                    3Vírgulas • Prometheus • Uncensored
+                    VOUGHT • Prometheus • Uncensored
                 </p>
             </div>
         </div>

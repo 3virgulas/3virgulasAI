@@ -7,7 +7,8 @@
 // =====================================================
 
 import { useNavigate } from 'react-router-dom';
-import { Plus, MessageSquare, Trash2, LogOut, Loader2, X, User, Lock, Instagram } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, MessageSquare, Trash2, LogOut, Loader2, X, User, Lock, Code2 } from 'lucide-react';
 import { Chat } from '../types/chat';
 import { PrometheusCard } from './PremiumCard';
 import { InstallAppButton } from './InstallAppButton';
@@ -44,8 +45,14 @@ export function Sidebar({
     onClose,
 }: SidebarProps) {
     const navigate = useNavigate();
+    const [showCodexToast, setShowCodexToast] = useState(false);
 
-    const handleDelete = (e: React.MouseEvent, chatId: string) => {
+    const triggerCodexToast = () => {
+        setShowCodexToast(true);
+        setTimeout(() => setShowCodexToast(false), 3000);
+    };
+
+    const handleDeleteChat = (e: React.MouseEvent, chatId: string) => {
         e.stopPropagation();
         if (confirm('Tem certeza que deseja excluir esta conversa?')) {
             onDeleteChat(chatId);
@@ -153,7 +160,7 @@ export function Sidebar({
                                 <MessageSquare className={`w-4 h-4 flex-shrink-0 ${currentChatId === chat.id ? 'text-zinc-300' : 'opacity-50'}`} />
                                 <span className="flex-1 text-sm truncate">{chat.title}</span>
                                 <button
-                                    onClick={(e) => handleDelete(e, chat.id)}
+                                    onClick={(e) => handleDeleteChat(e, chat.id)}
                                     className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/10 hover:text-red-400 rounded transition-all"
                                     title="Excluir conversa"
                                 >
@@ -166,17 +173,15 @@ export function Sidebar({
 
                 {/* Footer */}
                 <div className="p-3 border-t border-zinc-800/50">
-                    {/* Instagram Link - Logged Users Only */}
+                    {/* Codex - Coming Soon */}
                     {!isGuest && (
-                        <a
-                            href="https://www.instagram.com/3virgulas"
-                            target="_blank"
-                            rel="noopener noreferrer"
+                        <button
+                            onClick={triggerCodexToast}
                             className="flex items-center gap-3 px-3 py-2 w-full text-sm font-medium text-zinc-400 rounded-lg hover:bg-zinc-900 hover:text-white transition-all group mb-1"
                         >
-                            <Instagram className="w-4 h-4 group-hover:text-[#E1306C] transition-colors" />
-                            Siga no Instagram
-                        </a>
+                            <Code2 className="w-4 h-4 group-hover:text-zinc-200 transition-colors" />
+                            Codex
+                        </button>
                     )}
 
                     {/* Install App Button - PWA */}
@@ -220,11 +225,27 @@ export function Sidebar({
                     )}
                     <div className="mt-3 text-center">
                         <p className="text-[9px] text-zinc-600 uppercase tracking-[0.15em] font-mono">
-                            3Vírgulas • Prometheus
+                            VOUGHT • Prometheus
                         </p>
                     </div>
                 </div>
             </aside>
+
+            {/* Codex — Toast */}
+            <div
+                className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ${
+                    showCodexToast
+                        ? 'opacity-100 translate-y-0 pointer-events-auto'
+                        : 'opacity-0 translate-y-3 pointer-events-none'
+                }`}
+            >
+                <div className="px-5 py-3 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl flex items-center gap-3">
+                    <Code2 className="w-4 h-4 text-zinc-400 flex-shrink-0" />
+                    <p className="text-sm text-zinc-200 font-medium tracking-tight whitespace-nowrap">
+                        Essa função estará disponível em breve
+                    </p>
+                </div>
+            </div>
         </>
     );
 }
